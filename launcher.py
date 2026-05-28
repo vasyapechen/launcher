@@ -304,17 +304,26 @@ class LauncherApp(ctk.CTk):
         zip_path = game_dir / f"{game['id']}.zip"
 
         try:
-            # Прогресс скачивания
-            def _reporthook(count, block, total):
-                if total > 0 and card:
-                    pct  = min(1.0, count * block / total)
-                    done = count * block / 1_048_576
-                    tot  = total / 1_048_576
-                    self.after(0, lambda p=pct, d=done, t=tot:
-                               card.show_progress(p, f"{d:.1f} / {t:.1f} МБ"))
-
             if card: self.after(0, lambda: card.show_progress(0, "Подключение..."))
-            _ur.urlretrieve(url, zip_path, _reporthook)
+
+            req = _ur.Request(url, headers={"User-Agent": "FlagRaceLauncher/1.0"})
+            with _ur.urlopen(req, timeout=60) as resp:
+                total = int(resp.getheader("Content-Length") or 0)
+                done  = 0
+                chunk = 65536
+                with open(zip_path, "wb") as f:
+                    while True:
+                        buf = resp.read(chunk)
+                        if not buf:
+                            break
+                        f.write(buf)
+                        done += len(buf)
+                        if total > 0 and card:
+                            pct = min(1.0, done / total)
+                            d_mb = done / 1_048_576
+                            t_mb = total / 1_048_576
+                            self.after(0, lambda p=pct, d=d_mb, t=t_mb:
+                                       card.show_progress(p, f"{d:.1f} / {t:.1f} МБ"))
 
             # Распаковка
             if card: self.after(0, lambda: card.show_progress(1.0, "Распаковка..."))
