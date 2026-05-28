@@ -2,6 +2,7 @@ import customtkinter as ctk
 import json, os, sys, threading, zipfile, subprocess
 import urllib.request as _ur
 from pathlib import Path
+from tkinter import filedialog
 
 # ── Версия и URLs ────────────────────────────────────────
 LAUNCHER_VERSION = "1.0.0"
@@ -9,11 +10,27 @@ CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/cata
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 
 # ── Пути ─────────────────────────────────────────────────
-BASE_DIR   = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
-GAMES_DIR  = BASE_DIR / "games"
-STATE_FILE = BASE_DIR / "games_state.json"
-CACHE_FILE = BASE_DIR / "catalog_cache.json"
-GAMES_DIR.mkdir(exist_ok=True)
+BASE_DIR    = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
+STATE_FILE  = BASE_DIR / "games_state.json"
+CACHE_FILE  = BASE_DIR / "catalog_cache.json"
+CONFIG_FILE = BASE_DIR / "launcher_config.json"
+
+DEFAULT_GAMES_DIR = Path("C:/games")
+
+def load_config():
+    try:
+        if CONFIG_FILE.exists():
+            return json.loads(CONFIG_FILE.read_text(encoding='utf-8'))
+    except: pass
+    return {}
+
+def save_config(cfg):
+    try: CONFIG_FILE.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding='utf-8')
+    except: pass
+
+_config   = load_config()
+GAMES_DIR = Path(_config.get("games_dir", str(DEFAULT_GAMES_DIR)))
+GAMES_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Состояние установленных игр ───────────────────────────
 def load_state():
@@ -185,7 +202,20 @@ class LauncherApp(ctk.CTk):
             command=lambda: threading.Thread(
                 target=self._load_catalog, daemon=True).start()
         )
-        self.refresh_btn.pack(side="right", padx=12)
+        self.refresh_btn.pack(side="right", padx=4)
+
+        self.folder_btn = ctk.CTkButton(
+            hdr, text="📁", width=38, height=32,
+            fg_color="transparent", hover_color="#222244",
+            command=self._choose_games_dir
+        )
+        self.folder_btn.pack(side="right", padx=4)
+
+        self.dir_lbl = ctk.CTkLabel(
+            hdr, text=str(GAMES_DIR),
+            font=ctk.CTkFont(size=10),
+            text_color="#444466")
+        self.dir_lbl.pack(side="right", padx=8)
 
         self.status_lbl = ctk.CTkLabel(
             hdr, text="...",
@@ -206,6 +236,22 @@ class LauncherApp(ctk.CTk):
         ctk.CTkLabel(ftr, text=f"Launcher v{LAUNCHER_VERSION}",
                      font=ctk.CTkFont(size=10),
                      text_color="#333355").pack(side="left", padx=12)
+
+    # ── Выбор папки ─────────────────────────────────────
+    def _choose_games_dir(self):
+        global GAMES_DIR
+        chosen = filedialog.askdirectory(
+            title="Папка для игр",
+            initialdir=str(GAMES_DIR)
+        )
+        if not chosen:
+            return
+        GAMES_DIR = Path(chosen)
+        GAMES_DIR.mkdir(parents=True, exist_ok=True)
+        _config["games_dir"] = str(GAMES_DIR)
+        save_config(_config)
+        self.dir_lbl.configure(text=str(GAMES_DIR))
+        self._set_status("Папка изменена")
 
     # ── Запуск ───────────────────────────────────────────
     def _startup(self):
