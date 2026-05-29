@@ -539,7 +539,7 @@ class LauncherApp(ctk.CTk):
     def _show_login_screen(self):
         self._login_win = ctk.CTkToplevel(self)
         self._login_win.title("Sign in")
-        self._login_win.geometry("420x420")
+        self._login_win.geometry("420x480")
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
         self._login_win.grab_set()
@@ -565,6 +565,18 @@ class LauncherApp(ctk.CTk):
             corner_radius=12, font=ctk.CTkFont(size=14, weight="bold"),
             command=lambda: threading.Thread(target=self._do_login, daemon=True).start()
         ).pack(pady=(16, 0))
+
+        ctk.CTkLabel(self._login_win, text="No subscription yet?",
+                     font=ctk.CTkFont(size=11), text_color="#444466").pack(pady=(10, 0))
+
+        ctk.CTkButton(
+            self._login_win, text="❤  Subscribe on Patreon",
+            width=240, height=34,
+            fg_color="#FF424D", hover_color="#cc2f38",
+            corner_radius=10, font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="white",
+            command=lambda: webbrowser.open(PATREON_URL)
+        ).pack(pady=(4, 0))
 
         # Разделитель "— или —"
         sep_frame = ctk.CTkFrame(self._login_win, fg_color="transparent")
