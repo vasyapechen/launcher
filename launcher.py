@@ -598,7 +598,7 @@ class LauncherApp(ctk.CTk):
         self._login_win = ctk.CTkToplevel(self)
         self._login_win.title("Sign in")
         h = 570 if game else 480
-        self._login_win.geometry(f"420x{h}")
+        self._login_win.geometry(f"460x{h}")
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
         self._login_win.protocol("WM_DELETE_WINDOW", self._login_win.destroy)
@@ -660,26 +660,24 @@ class LauncherApp(ctk.CTk):
 
         # Поле ввода кода (скрыто до нажатия)
         self._code_entry_frame = ctk.CTkFrame(self._login_win, fg_color="transparent")
-        entry_row = ctk.CTkFrame(self._code_entry_frame, fg_color="transparent")
-        entry_row.pack()
         self._code_entry = ctk.CTkEntry(
-            entry_row,
+            self._code_entry_frame,
             placeholder_text="GUEST-XXXXXX",
-            width=190, height=36,
+            width=190, height=38,
             font=ctk.CTkFont(size=13, family="Courier"),
             justify="center"
         )
-        self._code_entry.pack(side="left", padx=(0, 8))
+        self._code_entry.grid(row=0, column=0, padx=(0, 8))
         self._add_entry_context_menu(self._code_entry)
         self._code_entry.bind("<Return>", lambda e: threading.Thread(
             target=self._do_redeem_code, daemon=True).start())
         ctk.CTkButton(
-            entry_row, text="→", width=44, height=36,
+            self._code_entry_frame, text="→", width=46, height=38,
             fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
-            corner_radius=8, font=ctk.CTkFont(size=16, weight="bold"),
+            corner_radius=8, font=ctk.CTkFont(size=18, weight="bold"),
             command=lambda: threading.Thread(
                 target=self._do_redeem_code, daemon=True).start()
-        ).pack(side="left")
+        ).grid(row=0, column=1)
 
         # Блок активации купленной игры (показывается только если нажали Play на игре)
         if game:
