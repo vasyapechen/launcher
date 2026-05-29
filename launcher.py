@@ -709,36 +709,43 @@ class LauncherApp(ctk.CTk):
             ).pack(pady=(4, 16))
 
     def _add_entry_context_menu(self, entry):
-        """Контекстное меню (ПКМ) + вставка при русской раскладке (Ctrl+М и др.)."""
+        """Контекстное меню (ПКМ) + вставка при любой раскладке (по физическому keycode)."""
         import tkinter as tk
         try:
             inner = entry._entry   # tk.Entry внутри CTkEntry
         except AttributeError:
             return
+        try:
+            menu = tk.Menu(
+                inner, tearoff=0,
+                bg="#1a1a2e", fg="#e8e8f8",
+                activebackground="#2a2a4e", activeforeground="#e8e8f8",
+                bd=0
+            )
+            menu.add_command(label="Вырезать",     command=lambda: inner.event_generate("<<Cut>>"))
+            menu.add_command(label="Копировать",   command=lambda: inner.event_generate("<<Copy>>"))
+            menu.add_command(label="Вставить",     command=lambda: inner.event_generate("<<Paste>>"))
+            menu.add_separator()
+            menu.add_command(label="Выделить всё", command=lambda: inner.event_generate("<<SelectAll>>"))
 
-        menu = tk.Menu(
-            inner, tearoff=0,
-            bg="#1a1a2e", fg="#e8e8f8",
-            activebackground="#2a2a4e", activeforeground="#e8e8f8",
-            bd=0
-        )
-        menu.add_command(label="Вырезать",     command=lambda: inner.event_generate("<<Cut>>"))
-        menu.add_command(label="Копировать",   command=lambda: inner.event_generate("<<Copy>>"))
-        menu.add_command(label="Вставить",     command=lambda: inner.event_generate("<<Paste>>"))
-        menu.add_separator()
-        menu.add_command(label="Выделить всё", command=lambda: inner.event_generate("<<SelectAll>>"))
+            def _show_menu(ev):
+                try:    menu.tk_popup(ev.x_root, ev.y_root)
+                finally: menu.grab_release()
 
-        def _show_menu(ev):
-            try:    menu.tk_popup(ev.x_root, ev.y_root)
-            finally: menu.grab_release()
+            inner.bind("<Button-3>", _show_menu)
 
-        inner.bind("<Button-3>", _show_menu)
-
-        # Русская раскладка: V→М  C→С  X→Ч  A→Ф
-        inner.bind("<Control-м>", lambda e: inner.event_generate("<<Paste>>"))
-        inner.bind("<Control-с>", lambda e: inner.event_generate("<<Copy>>"))
-        inner.bind("<Control-ч>", lambda e: inner.event_generate("<<Cut>>"))
-        inner.bind("<Control-ф>", lambda e: inner.event_generate("<<SelectAll>>"))
+            # Ctrl+клавиша по физическому keycode — не зависит от раскладки (V/C/X/A)
+            def _ctrl_key(ev):
+                if not (ev.state & 0x4):   # Control зажат
+                    return
+                kc = ev.keycode
+                if   kc == 86: inner.event_generate("<<Paste>>");     return "break"  # V
+                elif kc == 67: inner.event_generate("<<Copy>>");      return "break"  # C
+                elif kc == 88: inner.event_generate("<<Cut>>");       return "break"  # X
+                elif kc == 65: inner.event_generate("<<SelectAll>>"); return "break"  # A
+            inner.bind("<Control-KeyPress>", _ctrl_key)
+        except Exception:
+            pass
 
     def _do_login(self):
         self._set_login_status("Opening browser...")
