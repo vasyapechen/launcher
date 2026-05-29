@@ -597,7 +597,7 @@ class LauncherApp(ctk.CTk):
         self._login_game = game   # игра, для которой открывается вход
         self._login_win = ctk.CTkToplevel(self)
         self._login_win.title("Sign in")
-        h = 620 if game else 560
+        h = 570 if game else 480
         self._login_win.geometry(f"420x{h}")
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
@@ -660,31 +660,23 @@ class LauncherApp(ctk.CTk):
 
         # Поле ввода кода (скрыто до нажатия)
         self._code_entry_frame = ctk.CTkFrame(self._login_win, fg_color="transparent")
+        entry_row = ctk.CTkFrame(self._code_entry_frame, fg_color="transparent")
+        entry_row.pack()
         self._code_entry = ctk.CTkEntry(
-            self._code_entry_frame,
+            entry_row,
             placeholder_text="GUEST-XXXXXX",
-            width=220, height=36,
+            width=190, height=36,
             font=ctk.CTkFont(size=13, family="Courier"),
             justify="center"
         )
-        self._code_entry.pack(pady=(0, 6))
+        self._code_entry.pack(side="left", padx=(0, 8))
         self._add_entry_context_menu(self._code_entry)
         self._code_entry.bind("<Return>", lambda e: threading.Thread(
             target=self._do_redeem_code, daemon=True).start())
-        # Ряд кнопок под полем ввода
-        btn_row = ctk.CTkFrame(self._code_entry_frame, fg_color="transparent")
-        btn_row.pack()
         ctk.CTkButton(
-            btn_row, text="📋  Вставить", width=104, height=32,
-            fg_color="#2a2a44", hover_color="#3a3a5a",
-            corner_radius=8, font=ctk.CTkFont(size=12),
-            command=lambda: (self._code_entry.delete(0, "end"),
-                             self._code_entry.event_generate("<<Paste>>"))
-        ).pack(side="left", padx=(0, 6))
-        ctk.CTkButton(
-            btn_row, text="⏎  Ввести", width=104, height=32,
+            entry_row, text="→", width=44, height=36,
             fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
-            corner_radius=8, font=ctk.CTkFont(size=12, weight="bold"),
+            corner_radius=8, font=ctk.CTkFont(size=16, weight="bold"),
             command=lambda: threading.Thread(
                 target=self._do_redeem_code, daemon=True).start()
         ).pack(side="left")
