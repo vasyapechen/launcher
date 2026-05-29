@@ -260,6 +260,7 @@ class LauncherApp(ctk.CTk):
         self._auth      = load_auth()
         self._login_win = None
 
+        self.withdraw()  # прячем главное окно до окончания проверки авторизации
         self._build_ui()
         self.after(200, lambda: threading.Thread(
             target=self._startup, daemon=True).start())
@@ -369,6 +370,7 @@ class LauncherApp(ctk.CTk):
         self.after(0, self._show_login_screen)
 
     def _after_login(self):
+        self.after(0, self.deiconify)  # показываем главное окно после авторизации
         name = self._auth.get("name", "")
         self._set_status(f"Welcome, {name}!" if name else "")
         self._check_launcher_update()
