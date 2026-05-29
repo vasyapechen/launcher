@@ -1,6 +1,6 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.exe",
-  "changelog": "Тестовое обновление для проверки автообновления лаунчера."
+  "changelog": "Проверка обновлений теперь срабатывает при каждом запуске лаунчера."
 }
