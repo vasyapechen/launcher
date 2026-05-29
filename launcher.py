@@ -692,9 +692,14 @@ class LauncherApp(ctk.CTk):
         ctk.CTkFrame(sep_frame, fg_color="#2a2a44", height=1).pack(
             fill="x", side="left", expand=True, pady=9)
 
+        # Секция «Ввести код» — контейнер держит позицию в layout,
+        # внутри переключаем кнопку <-> поле ввода (без хрупкого after)
+        self._code_section = ctk.CTkFrame(self._login_win, fg_color="transparent")
+        self._code_section.pack(pady=(6, 0))
+
         # Кнопка «Ввести код»
         self._code_toggle_btn = ctk.CTkButton(
-            self._login_win, text="🎟  Enter access code",
+            self._code_section, text="🎟  Enter access code",
             width=240, height=38,
             fg_color="transparent", hover_color="#1a1a2e",
             border_width=1, border_color="#444466",
@@ -702,10 +707,10 @@ class LauncherApp(ctk.CTk):
             text_color="#aaaacc",
             command=self._show_code_entry
         )
-        self._code_toggle_btn.pack(pady=(6, 0))
+        self._code_toggle_btn.pack()
 
         # Поле ввода кода (скрыто до нажатия)
-        self._code_entry_frame = ctk.CTkFrame(self._login_win, fg_color="transparent")
+        self._code_entry_frame = ctk.CTkFrame(self._code_section, fg_color="transparent")
         self._code_entry = ctk.CTkEntry(
             self._code_entry_frame,
             placeholder_text="GUEST-XXXXXX",
@@ -859,9 +864,10 @@ class LauncherApp(ctk.CTk):
     def _show_code_entry(self):
         """Заменить кнопку «Ввести код» полем ввода в том же месте."""
         if self._code_entry_frame.winfo_ismapped():
+            self._code_entry.focus()
             return
-        self._code_entry_frame.pack(pady=(6, 0), after=self._code_toggle_btn)
         self._code_toggle_btn.pack_forget()
+        self._code_entry_frame.pack()
         self._code_entry.focus()
 
     def _do_redeem_code(self):
