@@ -165,15 +165,15 @@ class GameCard(ctk.CTkFrame):
 
         # Статус
         if inst_ver == new_ver:
-            s_text, s_col = f"v{inst_ver}  ✓ установлена", COLORS["green"]
-            btn_text, btn_col = "▶   Играть", COLORS["btn_play"]
+            s_text, s_col = f"v{inst_ver}  ✓ installed", COLORS["green"]
+            btn_text, btn_col = "▶   Play", COLORS["btn_play"]
         elif inst_ver:
-            s_text, s_col = f"v{inst_ver} → v{new_ver}  обновление", COLORS["orange"]
-            btn_text, btn_col = "🔄   Обновить", COLORS["btn_upd"]
+            s_text, s_col = f"v{inst_ver} → v{new_ver}  update", COLORS["orange"]
+            btn_text, btn_col = "🔄   Update", COLORS["btn_upd"]
         else:
             size = self.game.get('size_mb', '?')
-            s_text, s_col = f"v{new_ver}  •  {size} МБ", COLORS["gray"]
-            btn_text, btn_col = "⬇   Скачать", COLORS["btn_dl"]
+            s_text, s_col = f"v{new_ver}  •  {size} MB", COLORS["gray"]
+            btn_text, btn_col = "⬇   Download", COLORS["btn_dl"]
 
         ctk.CTkLabel(self, text=s_text,
                      font=ctk.CTkFont(size=11),
@@ -208,7 +208,7 @@ class GameCard(ctk.CTkFrame):
         # Кнопка удаления (только если установлена)
         if inst_ver:
             self.del_btn = ctk.CTkButton(
-                self, text="🗑  Удалить", width=170, height=26,
+                self, text="🗑  Uninstall", width=170, height=26,
                 fg_color="transparent", hover_color="#3a1a1a",
                 border_width=1, border_color="#552222",
                 corner_radius=8, font=ctk.CTkFont(size=11),
@@ -225,7 +225,7 @@ class GameCard(ctk.CTkFrame):
         self.prog_lbl.configure(text=text)
         self.prog_lbl.pack()
         self.progress.set(value)
-        self.btn.configure(state="disabled", text="Загрузка...")
+        self.btn.configure(state="disabled", text="Downloading...")
 
     def done_progress(self):
         self._prog_frame.pack_forget()
@@ -246,7 +246,7 @@ def _brighten(hex_col):
 class LauncherApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("My Games")
+        self.title("Vasya_pechen")
         self.geometry("780x520")
         self.minsize(500, 380)
         self.configure(fg_color=COLORS["bg"])
@@ -271,7 +271,7 @@ class LauncherApp(ctk.CTk):
         hdr.pack(fill="x")
         hdr.pack_propagate(False)
 
-        ctk.CTkLabel(hdr, text="⚔  MY GAMES",
+        ctk.CTkLabel(hdr, text="⚔  VASYA_PECHEN",
                      font=ctk.CTkFont(size=22, weight="bold"),
                      text_color=COLORS["accent"]).pack(side="left", padx=20)
 
@@ -312,7 +312,7 @@ class LauncherApp(ctk.CTk):
                             corner_radius=0, height=28)
         ftr.pack(fill="x")
         ftr.pack_propagate(False)
-        ctk.CTkLabel(ftr, text=f"Launcher v{LAUNCHER_VERSION}",
+        ctk.CTkLabel(ftr, text=f"vasya_pechen launcher v{LAUNCHER_VERSION}",
                      font=ctk.CTkFont(size=10),
                      text_color="#333355").pack(side="left", padx=12)
 
@@ -320,7 +320,7 @@ class LauncherApp(ctk.CTk):
     def _choose_games_dir(self):
         global GAMES_DIR
         chosen = filedialog.askdirectory(
-            title="Папка для игр",
+            title="Games folder",
             initialdir=str(GAMES_DIR)
         )
         if not chosen:
@@ -330,11 +330,11 @@ class LauncherApp(ctk.CTk):
         _config["games_dir"] = str(GAMES_DIR)
         save_config(_config)
         self.dir_lbl.configure(text=str(GAMES_DIR))
-        self._set_status("Папка изменена")
+        self._set_status("Folder changed")
 
     # ── Запуск ───────────────────────────────────────────
     def _startup(self):
-        self._set_status("Проверка авторизации...")
+        self._set_status("Checking auth...")
         token = self._auth.get("token")
         last_verify = self._auth.get("last_verify", 0)
         need_verify = (time.time() - last_verify) > 86400  # раз в день
@@ -361,7 +361,7 @@ class LauncherApp(ctk.CTk):
 
     def _after_login(self):
         name = self._auth.get("name", "")
-        self._set_status(f"Привет, {name}!" if name else "")
+        self._set_status(f"Welcome, {name}!" if name else "")
         self._check_launcher_update()
         self._load_catalog()
 
@@ -376,24 +376,24 @@ class LauncherApp(ctk.CTk):
 
     # ── Каталог ──────────────────────────────────────────
     def _load_catalog(self):
-        self._set_status("Загрузка каталога...")
+        self._set_status("Loading catalog...")
         data = fetch_json(CATALOG_URL)
         if data and 'games' in data:
             self._catalog = data['games']
             try: CACHE_FILE.write_text(
                     json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
             except: pass
-            self._set_status(f"{len(self._catalog)} игр")
+            self._set_status(f"{len(self._catalog)} games")
         else:
-            # Офлайн — берём кеш
+            # Offline — use cache
             if CACHE_FILE.exists():
                 try:
                     self._catalog = json.loads(
                         CACHE_FILE.read_text(encoding='utf-8')).get('games', [])
-                    self._set_status("Офлайн (кеш)")
-                except: self._set_status("Ошибка загрузки")
+                    self._set_status("Offline (cache)")
+                except: self._set_status("Load error")
             else:
-                self._set_status("Нет соединения и кеша")
+                self._set_status("No connection")
                 return
         self.after(0, self._render)
 
@@ -404,7 +404,7 @@ class LauncherApp(ctk.CTk):
         self._cards.clear()
 
         if not self._catalog:
-            ctk.CTkLabel(self.scroll, text="Игры не найдены",
+            ctk.CTkLabel(self.scroll, text="No games found",
                          font=ctk.CTkFont(size=16),
                          text_color=COLORS["gray"]).pack(pady=60)
             return
@@ -441,11 +441,11 @@ class LauncherApp(ctk.CTk):
             if game_dir.exists():
                 shutil.rmtree(game_dir)
         except Exception as e:
-            self._set_status(f"Ошибка удаления: {e}")
+            self._set_status(f"Uninstall error: {e}")
             return
         self._state.pop(gid, None)
         save_state(self._state)
-        self._set_status(f"{game['name']} удалена")
+        self._set_status(f"{game['name']} uninstalled")
         self.after(0, self._render)
 
     # ── Запуск игры ──────────────────────────────────────
@@ -455,9 +455,9 @@ class LauncherApp(ctk.CTk):
             token = self._auth.get("token", "")
             cmd = [exe, "--token", token, "--device", DEVICE_ID] if token else [exe]
             subprocess.Popen(cmd, cwd=os.path.dirname(exe))
-            self._set_status(f"Запущена: {game['name']}")
+            self._set_status(f"Launched: {game['name']}")
         else:
-            self._set_status("Файл не найден — переустановите игру")
+            self._set_status("File not found — reinstall the game")
             # Сбросить состояние чтобы можно было скачать снова
             self._state.pop(game['id'], None)
             save_state(self._state)
@@ -477,7 +477,7 @@ class LauncherApp(ctk.CTk):
         zip_path = game_dir / f"{game['id']}.zip"
 
         try:
-            if card: self.after(0, lambda: card.show_progress(0, "Подключение..."))
+            if card: self.after(0, lambda: card.show_progress(0, "Connecting..."))
 
             req = _ur.Request(url, headers={"User-Agent": "FlagRaceLauncher/1.0"})
             with _ur.urlopen(req, timeout=60) as resp:
@@ -496,10 +496,10 @@ class LauncherApp(ctk.CTk):
                             d_mb = done / 1_048_576
                             t_mb = total / 1_048_576
                             self.after(0, lambda p=pct, d=d_mb, t=t_mb:
-                                       card.show_progress(p, f"{d:.1f} / {t:.1f} МБ"))
+                                       card.show_progress(p, f"{d:.1f} / {t:.1f} MB"))
 
-            # Распаковка
-            if card: self.after(0, lambda: card.show_progress(1.0, "Распаковка..."))
+            # Extracting
+            if card: self.after(0, lambda: card.show_progress(1.0, "Extracting..."))
             with zipfile.ZipFile(zip_path, 'r') as z:
                 z.extractall(game_dir)
             zip_path.unlink(missing_ok=True)
@@ -518,10 +518,10 @@ class LauncherApp(ctk.CTk):
 
             if card: self.after(0, card.done_progress)
             self.after(0, self._render)
-            self._set_status(f"{game['name']} установлена ✓")
+            self._set_status(f"{game['name']} installed ✓")
 
         except Exception as e:
-            self._set_status(f"Ошибка загрузки: {e}")
+            self._set_status(f"Download error: {e}")
             if card: self.after(0, card.done_progress)
             # Убрать незавершённый zip
             zip_path.unlink(missing_ok=True)
@@ -529,18 +529,18 @@ class LauncherApp(ctk.CTk):
     # ── Экран входа ──────────────────────────────────────
     def _show_login_screen(self):
         self._login_win = ctk.CTkToplevel(self)
-        self._login_win.title("Войти")
+        self._login_win.title("Sign in")
         self._login_win.geometry("420x420")
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
         self._login_win.grab_set()
         self._login_win.protocol("WM_DELETE_WINDOW", self.destroy)  # закрыть = выйти из лаунчера
 
-        ctk.CTkLabel(self._login_win, text="⚔  MY GAMES",
+        ctk.CTkLabel(self._login_win, text="⚔  VASYA_PECHEN",
                      font=ctk.CTkFont(size=26, weight="bold"),
                      text_color=COLORS["accent"]).pack(pady=(30, 8))
 
-        ctk.CTkLabel(self._login_win, text="Требуется подписка Patreon",
+        ctk.CTkLabel(self._login_win, text="Patreon subscription required",
                      font=ctk.CTkFont(size=13),
                      text_color=COLORS["gray"]).pack()
 
@@ -550,7 +550,7 @@ class LauncherApp(ctk.CTk):
         self._login_status.pack(pady=(6, 0))
 
         ctk.CTkButton(
-            self._login_win, text="🔑  Войти через Patreon",
+            self._login_win, text="🔑  Sign in with Patreon",
             width=240, height=44,
             fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
             corner_radius=12, font=ctk.CTkFont(size=14, weight="bold"),
@@ -562,14 +562,14 @@ class LauncherApp(ctk.CTk):
         sep_frame.pack(pady=(18, 0), fill="x", padx=60)
         ctk.CTkFrame(sep_frame, fg_color="#2a2a44", height=1).pack(
             fill="x", side="left", expand=True, pady=9)
-        ctk.CTkLabel(sep_frame, text="  или  ", font=ctk.CTkFont(size=11),
+        ctk.CTkLabel(sep_frame, text="  or  ", font=ctk.CTkFont(size=11),
                      text_color="#444466").pack(side="left")
         ctk.CTkFrame(sep_frame, fg_color="#2a2a44", height=1).pack(
             fill="x", side="left", expand=True, pady=9)
 
         # Кнопка «Ввести код»
         self._code_toggle_btn = ctk.CTkButton(
-            self._login_win, text="🎟  Ввести код доступа",
+            self._login_win, text="🎟  Enter access code",
             width=240, height=38,
             fg_color="transparent", hover_color="#1a1a2e",
             border_width=1, border_color="#444466",
@@ -600,7 +600,7 @@ class LauncherApp(ctk.CTk):
         ).pack(side="left")
 
     def _do_login(self):
-        self._set_login_status("Открываю браузер...")
+        self._set_login_status("Opening browser...")
 
         # Найти свободный порт
         import socket
@@ -631,7 +631,7 @@ class LauncherApp(ctk.CTk):
         params = urllib.parse.urlencode({"device_id": DEVICE_ID, "local_port": port})
         url = f"{AUTH_SERVER}/auth/start?{params}"
         webbrowser.open(url)
-        self._set_login_status("Жду авторизации в браузере...")
+        self._set_login_status("Waiting for browser sign-in...")
 
         for _ in range(180):  # ждём до 3 минут
             srv.handle_request()
@@ -642,7 +642,7 @@ class LauncherApp(ctk.CTk):
 
         r = result_holder[0]
         if not r or not r.get("token"):
-            self._set_login_status("❌ Авторизация не завершена. Попробуй снова.")
+            self._set_login_status("❌ Sign-in not completed. Try again.")
             return
 
         self._auth = {
@@ -669,9 +669,9 @@ class LauncherApp(ctk.CTk):
     def _do_redeem_code(self):
         code = self._code_entry.get().strip().upper()
         if not code:
-            self._set_login_status("❌ Введи код")
+            self._set_login_status("❌ Enter a code")
             return
-        self._set_login_status("Проверяю код...")
+        self._set_login_status("Verifying code...")
         try:
             payload = json.dumps({
                 "code": code,
@@ -686,22 +686,22 @@ class LauncherApp(ctk.CTk):
             r = _ur.urlopen(req, timeout=10)
             result = json.loads(r.read())
         except Exception as e:
-            self._set_login_status(f"❌ Ошибка соединения")
+            self._set_login_status("❌ Connection error")
             return
 
         if not result.get("ok"):
             err = result.get("error", "")
             msgs = {
-                "invalid_code":       "❌ Неверный код",
-                "code_expired":       "❌ Срок действия кода истёк",
-                "code_limit_reached": "❌ Код уже использован максимальное число раз",
+                "invalid_code":       "❌ Invalid code",
+                "code_expired":       "❌ Code has expired",
+                "code_limit_reached": "❌ Code usage limit reached",
             }
             self._set_login_status(msgs.get(err, f"❌ {err}"))
             return
 
         self._auth = {
             "token":       result["token"],
-            "name":        result.get("name", "Гость"),
+            "name":        result.get("name", "Guest"),
             "tier":        result.get("tier", "guest"),
             "last_verify": time.time(),
         }
