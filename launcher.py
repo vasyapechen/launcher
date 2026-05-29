@@ -857,12 +857,12 @@ class LauncherApp(ctk.CTk):
         self._run_pending_action()
 
     def _show_code_entry(self):
-        """Показать/скрыть поле ввода кода."""
+        """Заменить кнопку «Ввести код» полем ввода в том же месте."""
         if self._code_entry_frame.winfo_ismapped():
-            self._code_entry_frame.pack_forget()
-        else:
-            self._code_entry_frame.pack(pady=(10, 0))
-            self._code_entry.focus()
+            return
+        self._code_entry_frame.pack(pady=(6, 0), after=self._code_toggle_btn)
+        self._code_toggle_btn.pack_forget()
+        self._code_entry.focus()
 
     def _do_redeem_code(self):
         code = self._code_entry.get().strip().upper()
