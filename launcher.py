@@ -75,20 +75,6 @@ def get_device_id():
             parts.append("cpu:" + cpu)
     except: pass
 
-    # 4. MAC-адрес сетевой карты
-    try:
-        parts.append("mac:" + hex(uuid.getnode()))
-    except: pass
-
-    # 5. Серийный номер диска
-    try:
-        out = _sp.check_output("wmic diskdrive get SerialNumber /value",
-                               shell=True, stderr=_sp.DEVNULL).decode()
-        serial = ''.join(out.split()).replace("SerialNumber=", "")
-        if serial:
-            parts.append("disk:" + serial)
-    except: pass
-
     if parts:
         combined = "|".join(parts)
         return hashlib.sha256(combined.encode()).hexdigest()[:40]
