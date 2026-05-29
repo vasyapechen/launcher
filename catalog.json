@@ -6,7 +6,7 @@
       "version": "1.06",
       "description": "Гонка флагов стран мира",
       "size_mb": 23,
-      "download_url": "https://github.com/vasyapechen/flag-race/releases/download/v1.06/FlagRace.zip",
+      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.06/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": ["basic", "pro"],
       "is_new": false
