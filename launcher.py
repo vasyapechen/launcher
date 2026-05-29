@@ -669,12 +669,21 @@ class LauncherApp(ctk.CTk):
             font=ctk.CTkFont(size=13, family="Courier"),
             justify="center"
         )
-        self._code_entry.pack(side="left", padx=(0, 8))
+        self._code_entry.pack(side="left", padx=(0, 6))
         self._add_entry_context_menu(self._code_entry)
         self._code_entry.bind("<Return>", lambda e: threading.Thread(
             target=self._do_redeem_code, daemon=True).start())
+        # Кнопка вставки из буфера (для русской раскладки)
         ctk.CTkButton(
-            entry_row, text="→", width=44, height=36,
+            entry_row, text="📋", width=36, height=36,
+            fg_color="#2a2a44", hover_color="#3a3a5a",
+            corner_radius=8, font=ctk.CTkFont(size=15),
+            command=lambda: (self._code_entry.delete(0, "end"),
+                             self._code_entry.event_generate("<<Paste>>"))
+        ).pack(side="left", padx=(0, 6))
+        # Кнопка отправки
+        ctk.CTkButton(
+            entry_row, text="⏎", width=36, height=36,
             fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
             corner_radius=8, font=ctk.CTkFont(size=16, weight="bold"),
             command=lambda: threading.Thread(
