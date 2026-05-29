@@ -7,3 +7,4 @@ games_state.json
 catalog_cache.json
 .DS_Store
 Thumbs.db
+auth_token.json
