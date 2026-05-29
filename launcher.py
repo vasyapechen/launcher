@@ -815,6 +815,7 @@ class LauncherApp(ctk.CTk):
             "token":       result["token"],
             "name":        result.get("name", "Guest"),
             "tier":        result.get("tier", "guest"),
+            "games":       result.get("games", []),
             "last_verify": time.time(),
         }
         save_auth(self._auth)
