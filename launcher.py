@@ -795,9 +795,17 @@ class LauncherApp(ctk.CTk):
                 headers={"Content-Type": "application/json",
                          "User-Agent": "FlagRaceLauncher/1.0"}
             )
-            r = _ur.urlopen(req, timeout=10)
-            result = json.loads(r.read())
-        except Exception as e:
+            try:
+                r = _ur.urlopen(req, timeout=15)
+                result = json.loads(r.read())
+            except Exception as e:
+                # HTTPError (4xx/5xx) тоже содержит тело с деталями ошибки
+                try:
+                    result = json.loads(e.read())  # type: ignore
+                except Exception:
+                    self._set_login_status("❌ Connection error")
+                    return
+        except Exception:
             self._set_login_status("❌ Connection error")
             return
 
