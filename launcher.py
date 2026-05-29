@@ -39,17 +39,31 @@ GAMES_DIR.mkdir(parents=True, exist_ok=True)
 TOKEN_FILE = BASE_DIR / "auth_token.json"
 
 def get_device_id():
+    import subprocess as _sp
+    # Попытка 1: wmic (Windows 10 и старше)
     try:
-        import subprocess as _sp
-        out = _sp.check_output("wmic csproduct get UUID", shell=True).decode()
-        return out.split("\n")[1].strip()
-    except:
-        _id_file = BASE_DIR / "device_id.txt"
-        if _id_file.exists():
-            return _id_file.read_text().strip()
-        _id = str(uuid.uuid4())
-        _id_file.write_text(_id)
-        return _id
+        out = _sp.check_output("wmic csproduct get UUID",
+                               shell=True, stderr=_sp.DEVNULL).decode()
+        uid = out.split("\n")[1].strip()
+        if uid and uid.upper() not in ("", "UUID"):
+            return uid
+    except: pass
+    # Попытка 2: PowerShell / Get-CimInstance (Windows 11)
+    try:
+        out = _sp.check_output(
+            'powershell -Command "(Get-CimInstance Win32_ComputerSystemProduct).UUID"',
+            shell=True, stderr=_sp.DEVNULL).decode()
+        uid = out.strip()
+        if uid:
+            return uid
+    except: pass
+    # Fallback: сохранённый случайный UUID
+    _id_file = BASE_DIR / "device_id.txt"
+    if _id_file.exists():
+        return _id_file.read_text().strip()
+    _id = str(uuid.uuid4())
+    _id_file.write_text(_id)
+    return _id
 
 DEVICE_ID = get_device_id()
 
