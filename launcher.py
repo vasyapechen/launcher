@@ -257,10 +257,11 @@ class LauncherApp(ctk.CTk):
         self._catalog = []
         self._cards   = {}
 
-        self._auth      = load_auth()
-        self._login_win = None
+        self._auth           = load_auth()
+        self._login_win      = None
+        self._logged_in      = False
+        self._pending_action = None  # действие, которое запустится после входа
 
-        self.withdraw()  # прячем главное окно до окончания проверки авторизации
         self._build_ui()
         self.after(200, lambda: threading.Thread(
             target=self._startup, daemon=True).start())
@@ -347,10 +348,10 @@ class LauncherApp(ctk.CTk):
         self._set_status("Checking auth...")
         token = self._auth.get("token")
         last_verify = self._auth.get("last_verify", 0)
-        need_verify = (time.time() - last_verify) > 86400  # раз в день
+        need_verify = (time.time() - last_verify) > 86400
 
         if token and not need_verify:
-            # Токен свежий — пропускаем онлайн-проверку
+            self._logged_in = True
             self._after_login()
             return
 
@@ -360,17 +361,19 @@ class LauncherApp(ctk.CTk):
                 self._auth["last_verify"] = time.time()
                 self._auth["name"] = result.get("name", "")
                 save_auth(self._auth)
+                self._logged_in = True
                 self._after_login()
                 return
             else:
                 clear_auth()
                 self._auth = {}
 
-        # Нет токена или истёк — показываем экран входа
-        self.after(0, self._show_login_screen)
+        # Нет токена — загружаем каталог, но без возможности играть
+        self._set_status("Sign in to play")
+        self._load_catalog()
 
     def _after_login(self):
-        self.after(0, self.deiconify)  # показываем главное окно после авторизации
+        self._logged_in = True
         name = self._auth.get("name", "")
         self._set_status(f"Welcome, {name}!" if name else "")
         self._check_launcher_update()
@@ -433,6 +436,11 @@ class LauncherApp(ctk.CTk):
 
     # ── Действие по кнопке ───────────────────────────────
     def _on_action(self, game, delete=False):
+        if not self._logged_in:
+            # Сохраняем действие и показываем окно входа
+            self._pending_action = lambda: self._on_action(game, delete)
+            self._show_login_screen()
+            return
         if delete:
             self._delete(game)
             return
@@ -544,8 +552,7 @@ class LauncherApp(ctk.CTk):
         self._login_win.geometry("420x480")
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
-        self._login_win.grab_set()
-        self._login_win.protocol("WM_DELETE_WINDOW", self.destroy)  # закрыть = выйти из лаунчера
+        self._login_win.protocol("WM_DELETE_WINDOW", self._login_win.destroy)
 
         ctk.CTkLabel(self._login_win, text="⚔  VASYA_PECHEN",
                      font=ctk.CTkFont(size=26, weight="bold"),
@@ -680,6 +687,7 @@ class LauncherApp(ctk.CTk):
             self._login_win.after(0, self._login_win.destroy)
 
         self._after_login()
+        self._run_pending_action()
 
     def _show_code_entry(self):
         """Показать/скрыть поле ввода кода."""
@@ -734,6 +742,14 @@ class LauncherApp(ctk.CTk):
             self._login_win.after(0, self._login_win.destroy)
 
         self._after_login()
+        self._run_pending_action()
+
+    def _run_pending_action(self):
+        """Выполнить действие, которое пользователь пытался сделать до входа."""
+        if self._pending_action:
+            action = self._pending_action
+            self._pending_action = None
+            self.after(150, action)
 
     def _set_login_status(self, text):
         if self._login_win:
