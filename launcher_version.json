@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.exe",
-  "changelog": "Первый релиз"
+  "changelog": "Исправлено поле ввода кода. Добавлено автообновление лаунчера и значок V."
 }

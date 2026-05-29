@@ -15,7 +15,7 @@ except Exception:
     pass
 
 # ── Версия и URLs ────────────────────────────────────────
-LAUNCHER_VERSION = "1.0.0"
+LAUNCHER_VERSION = "1.0.1"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
@@ -427,10 +427,89 @@ class LauncherApp(ctk.CTk):
         data = fetch_json(VERSION_URL)
         if not data: return
         if data.get('version', '0') > LAUNCHER_VERSION:
-            mandatory = data.get('mandatory', False)
-            msg = f"Доступно обновление лаунчера v{data['version']}"
-            self._set_status(msg)
-            # TODO: скачать и заменить лаунчер
+            self.after(0, lambda: self._prompt_launcher_update(data))
+
+    def _prompt_launcher_update(self, data):
+        """Окно с предложением обновить лаунчер."""
+        win = ctk.CTkToplevel(self)
+        win.title("Обновление лаунчера")
+        win.geometry("400x230")
+        win.resizable(False, False)
+        win.configure(fg_color=COLORS["bg"])
+        win.protocol("WM_DELETE_WINDOW", win.destroy)
+        self._bring_to_front(win)
+
+        ctk.CTkLabel(win, text="🔄  Доступно обновление",
+                     font=ctk.CTkFont(size=18, weight="bold"),
+                     text_color=COLORS["accent"]).pack(pady=(24, 4))
+        ctk.CTkLabel(win, text=f"Новая версия v{data.get('version','')}",
+                     font=ctk.CTkFont(size=13),
+                     text_color=COLORS["gray"]).pack()
+        cl = data.get('changelog', '')
+        if cl:
+            ctk.CTkLabel(win, text=cl, font=ctk.CTkFont(size=11),
+                         text_color="#888899", wraplength=340).pack(pady=(8, 0))
+
+        self._upd_status = ctk.CTkLabel(win, text="", font=ctk.CTkFont(size=11),
+                                        text_color=COLORS["orange"])
+        self._upd_status.pack(pady=(8, 0))
+
+        btns = ctk.CTkFrame(win, fg_color="transparent")
+        btns.pack(pady=(16, 0))
+        ctk.CTkButton(btns, text="Позже", width=110, height=36,
+                      fg_color="#33334d", hover_color="#44445d",
+                      command=win.destroy).grid(row=0, column=0, padx=6)
+        ctk.CTkButton(btns, text="Обновить сейчас", width=160, height=36,
+                      fg_color=COLORS["btn_play"],
+                      hover_color=_brighten(COLORS["btn_play"]),
+                      font=ctk.CTkFont(weight="bold"),
+                      command=lambda: threading.Thread(
+                          target=self._do_launcher_update,
+                          args=(data, win), daemon=True).start()
+                      ).grid(row=0, column=1, padx=6)
+
+    def _do_launcher_update(self, data, win=None):
+        """Скачивает новый exe и запускает bat-помощник для подмены и перезапуска."""
+        def status(t):
+            try: self.after(0, lambda: self._upd_status.configure(text=t))
+            except Exception: pass
+
+        url = data.get('download_url', '')
+        if not url:
+            status("Нет ссылки на обновление"); return
+        if not getattr(sys, 'frozen', False):
+            status("Автообновление работает только в собранном .exe"); return
+
+        try:
+            cur_exe = Path(sys.executable)
+            new_exe = cur_exe.with_name("Launcher_new.exe")
+            status("Скачивание обновления...")
+            req = _ur.Request(url, headers={"User-Agent": "Launcher"})
+            with _ur.urlopen(req, timeout=120) as r, open(new_exe, "wb") as f:
+                f.write(r.read())
+
+            # bat-помощник: ждёт закрытия лаунчера, заменяет exe, перезапускает, удаляет себя
+            bat = cur_exe.with_name("_update.bat")
+            bat_text = (
+                "@echo off\r\n"
+                ":wait\r\n"
+                "ping -n 2 127.0.0.1 >nul\r\n"
+                f'tasklist /fi "imagename eq {cur_exe.name}" | find /i "{cur_exe.name}" >nul && goto wait\r\n'
+                f'move /y "{new_exe.name}" "{cur_exe.name}" >nul\r\n'
+                f'start "" "{cur_exe.name}"\r\n'
+                'del "%~f0"\r\n'
+            )
+            bat.write_text(bat_text, encoding="utf-8")
+
+            status("Перезапуск...")
+            subprocess.Popen(
+                ["cmd", "/c", str(bat)],
+                cwd=str(cur_exe.parent),
+                creationflags=0x08000000  # CREATE_NO_WINDOW
+            )
+            self.after(300, self.destroy)
+        except Exception as e:
+            status(f"Ошибка: {e}")
 
     # ── Каталог ──────────────────────────────────────────
     def _load_catalog(self):
