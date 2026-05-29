@@ -142,6 +142,14 @@ def fetch_json(url):
         return json.loads(r.read().decode())
     except: return None
 
+def _ver_tuple(s):
+    """'1.0.2' -> (1, 0, 2). Нечисловые части игнорируются."""
+    out = []
+    for part in str(s).split('.'):
+        digits = ''.join(ch for ch in part if ch.isdigit())
+        out.append(int(digits) if digits else 0)
+    return tuple(out)
+
 # ── Тема ─────────────────────────────────────────────────
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -388,6 +396,7 @@ class LauncherApp(ctk.CTk):
         return True
 
     def _startup(self):
+        self._check_launcher_update()   # проверяем обновление лаунчера всегда при запуске
         self._set_status("Checking auth...")
         token = self._auth.get("token")
         last_verify = self._auth.get("last_verify", 0)
@@ -420,13 +429,12 @@ class LauncherApp(ctk.CTk):
         self._logged_in = True
         name = self._auth.get("name", "")
         self._set_status(f"Welcome, {name}!" if name else "")
-        self._check_launcher_update()
         self._load_catalog()
 
     def _check_launcher_update(self):
         data = fetch_json(VERSION_URL)
         if not data: return
-        if data.get('version', '0') > LAUNCHER_VERSION:
+        if _ver_tuple(data.get('version', '0')) > _ver_tuple(LAUNCHER_VERSION):
             self.after(0, lambda: self._prompt_launcher_update(data))
 
     def _prompt_launcher_update(self, data):
