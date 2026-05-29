@@ -1,13 +1,16 @@
 import customtkinter as ctk
-import json, os, sys, threading, zipfile, subprocess
+import json, os, sys, threading, zipfile, subprocess, webbrowser, uuid, time
 import urllib.request as _ur
+import urllib.parse
 from pathlib import Path
 from tkinter import filedialog
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # ── Версия и URLs ────────────────────────────────────────
 LAUNCHER_VERSION = "1.0.0"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
+AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
 
 # ── Пути ─────────────────────────────────────────────────
 BASE_DIR    = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
@@ -31,6 +34,51 @@ def save_config(cfg):
 _config   = load_config()
 GAMES_DIR = Path(_config.get("games_dir", str(DEFAULT_GAMES_DIR)))
 GAMES_DIR.mkdir(parents=True, exist_ok=True)
+
+# ── Auth ──────────────────────────────────────────────────
+TOKEN_FILE = BASE_DIR / "auth_token.json"
+
+def get_device_id():
+    try:
+        import subprocess as _sp
+        out = _sp.check_output("wmic csproduct get UUID", shell=True).decode()
+        return out.split("\n")[1].strip()
+    except:
+        _id_file = BASE_DIR / "device_id.txt"
+        if _id_file.exists():
+            return _id_file.read_text().strip()
+        _id = str(uuid.uuid4())
+        _id_file.write_text(_id)
+        return _id
+
+DEVICE_ID = get_device_id()
+
+def load_auth():
+    try:
+        if TOKEN_FILE.exists():
+            return json.loads(TOKEN_FILE.read_text(encoding='utf-8'))
+    except: pass
+    return {}
+
+def save_auth(data):
+    try: TOKEN_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
+    except: pass
+
+def clear_auth():
+    try: TOKEN_FILE.unlink(missing_ok=True)
+    except: pass
+
+def verify_token(token):
+    """Возвращает {'ok':True,'name':...,'tier':...} или {'ok':False,'error':...}"""
+    try:
+        payload = json.dumps({"token": token, "device_id": DEVICE_ID}).encode()
+        req = _ur.Request(f"{AUTH_SERVER}/auth/verify",
+                          data=payload,
+                          headers={"Content-Type":"application/json","User-Agent":"FlagRaceLauncher/1.0"})
+        r = _ur.urlopen(req, timeout=10)
+        return json.loads(r.read())
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 # ── Состояние установленных игр ───────────────────────────
 def load_state():
@@ -194,6 +242,9 @@ class LauncherApp(ctk.CTk):
         self._catalog = []
         self._cards   = {}
 
+        self._auth      = load_auth()
+        self._login_win = None
+
         self._build_ui()
         self.after(200, lambda: threading.Thread(
             target=self._startup, daemon=True).start())
@@ -269,7 +320,34 @@ class LauncherApp(ctk.CTk):
 
     # ── Запуск ───────────────────────────────────────────
     def _startup(self):
-        self._set_status("Проверка обновлений...")
+        self._set_status("Проверка авторизации...")
+        token = self._auth.get("token")
+        last_verify = self._auth.get("last_verify", 0)
+        need_verify = (time.time() - last_verify) > 86400 * 3  # раз в 3 дня
+
+        if token and not need_verify:
+            # Токен свежий — пропускаем онлайн-проверку
+            self._after_login()
+            return
+
+        if token:
+            result = verify_token(token)
+            if result.get("ok"):
+                self._auth["last_verify"] = time.time()
+                self._auth["name"] = result.get("name", "")
+                save_auth(self._auth)
+                self._after_login()
+                return
+            else:
+                clear_auth()
+                self._auth = {}
+
+        # Нет токена или истёк — показываем экран входа
+        self.after(0, self._show_login_screen)
+
+    def _after_login(self):
+        name = self._auth.get("name", "")
+        self._set_status(f"Привет, {name}!" if name else "")
         self._check_launcher_update()
         self._load_catalog()
 
@@ -431,6 +509,100 @@ class LauncherApp(ctk.CTk):
             if card: self.after(0, card.done_progress)
             # Убрать незавершённый zip
             zip_path.unlink(missing_ok=True)
+
+    # ── Экран входа ──────────────────────────────────────
+    def _show_login_screen(self):
+        self._login_win = ctk.CTkToplevel(self)
+        self._login_win.title("Войти")
+        self._login_win.geometry("420x300")
+        self._login_win.resizable(False, False)
+        self._login_win.configure(fg_color=COLORS["bg"])
+        self._login_win.grab_set()
+        self._login_win.protocol("WM_DELETE_WINDOW", lambda: None)  # нельзя закрыть
+
+        ctk.CTkLabel(self._login_win, text="⚔  MY GAMES",
+                     font=ctk.CTkFont(size=26, weight="bold"),
+                     text_color=COLORS["accent"]).pack(pady=(40, 8))
+
+        ctk.CTkLabel(self._login_win, text="Требуется подписка Patreon",
+                     font=ctk.CTkFont(size=13),
+                     text_color=COLORS["gray"]).pack()
+
+        self._login_status = ctk.CTkLabel(self._login_win, text="",
+                     font=ctk.CTkFont(size=11),
+                     text_color=COLORS["orange"])
+        self._login_status.pack(pady=(8, 0))
+
+        ctk.CTkButton(
+            self._login_win, text="🔑  Войти через Patreon",
+            width=240, height=44,
+            fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
+            corner_radius=12, font=ctk.CTkFont(size=14, weight="bold"),
+            command=lambda: threading.Thread(target=self._do_login, daemon=True).start()
+        ).pack(pady=(20, 0))
+
+    def _do_login(self):
+        self._set_login_status("Открываю браузер...")
+
+        # Найти свободный порт
+        import socket
+        with socket.socket() as s:
+            s.bind(('', 0))
+            port = s.getsockname()[1]
+
+        result_holder = [None]
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                parsed = urllib.parse.urlparse(self.path)
+                params = urllib.parse.parse_qs(parsed.query)
+                result_holder[0] = {
+                    "token": params.get("token", [""])[0],
+                    "name":  params.get("name",  [""])[0],
+                    "tier":  params.get("tier",  [""])[0],
+                }
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                self.wfile.write("<html><body style='background:#111;color:#8f8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'><h2>✅ Готово! Можешь закрыть это окно.</h2></body></html>".encode())
+            def log_message(self, *a): pass
+
+        srv = HTTPServer(("localhost", port), Handler)
+        srv.timeout = 1
+
+        params = urllib.parse.urlencode({"device_id": DEVICE_ID, "local_port": port})
+        url = f"{AUTH_SERVER}/auth/start?{params}"
+        webbrowser.open(url)
+        self._set_login_status("Жду авторизации в браузере...")
+
+        for _ in range(180):  # ждём до 3 минут
+            srv.handle_request()
+            if result_holder[0]:
+                break
+
+        srv.server_close()
+
+        r = result_holder[0]
+        if not r or not r.get("token"):
+            self._set_login_status("❌ Авторизация не завершена. Попробуй снова.")
+            return
+
+        self._auth = {
+            "token":       r["token"],
+            "name":        r["name"],
+            "tier":        r["tier"],
+            "last_verify": time.time(),
+        }
+        save_auth(self._auth)
+
+        if self._login_win:
+            self._login_win.after(0, self._login_win.destroy)
+
+        self._after_login()
+
+    def _set_login_status(self, text):
+        if self._login_win:
+            self._login_win.after(0, lambda: self._login_status.configure(text=text))
 
     # ── Хелпер статуса ───────────────────────────────────
     def _set_status(self, text):
