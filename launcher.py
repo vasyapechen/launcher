@@ -496,15 +496,35 @@ class LauncherApp(ctk.CTk):
             with _ur.urlopen(req, timeout=120) as r, open(new_exe, "wb") as f:
                 f.write(r.read())
 
-            # bat-помощник: ждёт закрытия лаунчера, заменяет exe, перезапускает, удаляет себя
+            # bat-помощник: ждёт закрытия лаунчера, заменяет exe (с повторами,
+            # пока файл может быть заблокирован), перезапускает, удаляет себя
             bat = cur_exe.with_name("_update.bat")
+            name, new = cur_exe.name, new_exe.name
             bat_text = (
                 "@echo off\r\n"
-                ":wait\r\n"
+                "setlocal enableextensions enabledelayedexpansion\r\n"
+                # 1) дождаться полного закрытия старого процесса
+                ":waitproc\r\n"
+                f'tasklist /fi "imagename eq {name}" 2>nul | find /i "{name}" >nul\r\n'
+                "if not errorlevel 1 (\r\n"
+                "  ping -n 2 127.0.0.1 >nul\r\n"
+                "  goto waitproc\r\n"
+                ")\r\n"
+                # небольшая пауза, чтобы ОС отпустила файловый дескриптор
                 "ping -n 2 127.0.0.1 >nul\r\n"
-                f'tasklist /fi "imagename eq {cur_exe.name}" | find /i "{cur_exe.name}" >nul && goto wait\r\n'
-                f'move /y "{new_exe.name}" "{cur_exe.name}" >nul\r\n'
-                f'start "" "{cur_exe.name}"\r\n'
+                # 2) заменить exe, повторяя пока файл занят (до ~60 сек)
+                "set /a tries=0\r\n"
+                ":trymove\r\n"
+                f'move /y "{new}" "{name}" >nul 2>&1\r\n'
+                f'if exist "{new}" (\r\n'
+                "  set /a tries+=1\r\n"
+                "  if !tries! lss 30 (\r\n"
+                "    ping -n 3 127.0.0.1 >nul\r\n"
+                "    goto trymove\r\n"
+                "  )\r\n"
+                ")\r\n"
+                # 3) запустить обновлённый лаунчер и удалить себя
+                f'start "" "{name}"\r\n'
                 'del "%~f0"\r\n'
             )
             bat.write_text(bat_text, encoding="utf-8")
