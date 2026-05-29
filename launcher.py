@@ -6,6 +6,14 @@ from pathlib import Path
 from tkinter import filedialog
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
+# Отдельная AppUserModelID — Windows показывает нашу иконку в панели задач
+try:
+    import ctypes
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+        "vasya_pechen.launcher.1.0")
+except Exception:
+    pass
+
 # ── Версия и URLs ────────────────────────────────────────
 LAUNCHER_VERSION = "1.0.0"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
