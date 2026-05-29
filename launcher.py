@@ -520,7 +520,7 @@ class LauncherApp(ctk.CTk):
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
         self._login_win.grab_set()
-        self._login_win.protocol("WM_DELETE_WINDOW", lambda: None)  # нельзя закрыть
+        self._login_win.protocol("WM_DELETE_WINDOW", self.destroy)  # закрыть = выйти из лаунчера
 
         ctk.CTkLabel(self._login_win, text="⚔  MY GAMES",
                      font=ctk.CTkFont(size=26, weight="bold"),
