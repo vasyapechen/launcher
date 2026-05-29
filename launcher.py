@@ -371,7 +371,7 @@ class LauncherApp(ctk.CTk):
         self._set_status("Checking auth...")
         token = self._auth.get("token")
         last_verify = self._auth.get("last_verify", 0)
-        need_verify = (time.time() - last_verify) > 86400
+        need_verify = (time.time() - last_verify) > 3600   # раз в час
 
         if token and not need_verify:
             self._logged_in = True
