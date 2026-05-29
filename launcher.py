@@ -375,6 +375,18 @@ class LauncherApp(ctk.CTk):
         self._set_status("Folder changed")
 
     # ── Запуск ───────────────────────────────────────────
+    def _has_game_access(self, game):
+        """Проверяет, есть ли у текущего пользователя доступ к этой игре."""
+        tier  = self._auth.get("tier", "")
+        owned = self._auth.get("games", [])
+        if not tier:
+            return False
+        # Покупатель: только купленные игры
+        if tier == "buyer":
+            return game["id"] in owned
+        # Подписчик / гость-код: доступ ко всем играм
+        return True
+
     def _startup(self):
         self._set_status("Checking auth...")
         token = self._auth.get("token")
@@ -390,7 +402,8 @@ class LauncherApp(ctk.CTk):
             result = verify_token(token)
             if result.get("ok"):
                 self._auth["last_verify"] = time.time()
-                self._auth["name"] = result.get("name", "")
+                self._auth["name"]  = result.get("name", "")
+                self._auth["games"] = result.get("games", [])
                 save_auth(self._auth)
                 self._logged_in = True
                 self._after_login()
@@ -468,12 +481,15 @@ class LauncherApp(ctk.CTk):
     # ── Действие по кнопке ───────────────────────────────
     def _on_action(self, game, delete=False):
         if not self._logged_in:
-            # Сохраняем действие и показываем окно входа
             self._pending_action = lambda: self._on_action(game, delete)
-            self._show_login_screen()
+            self._show_login_screen(game=game)
             return
         if delete:
             self._delete(game)
+            return
+        # Проверяем доступ к конкретной игре
+        if not self._has_game_access(game):
+            self._show_activate_screen(game)
             return
         inst = self._state.get(game['id'], {})
         if inst.get('version') == game['version']:
@@ -577,10 +593,12 @@ class LauncherApp(ctk.CTk):
             zip_path.unlink(missing_ok=True)
 
     # ── Экран входа ──────────────────────────────────────
-    def _show_login_screen(self):
+    def _show_login_screen(self, game=None):
+        self._login_game = game   # игра, для которой открывается вход
         self._login_win = ctk.CTkToplevel(self)
         self._login_win.title("Sign in")
-        self._login_win.geometry("420x480")
+        h = 570 if game else 480
+        self._login_win.geometry(f"420x{h}")
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
         self._login_win.protocol("WM_DELETE_WINDOW", self._login_win.destroy)
@@ -660,6 +678,35 @@ class LauncherApp(ctk.CTk):
                 target=self._do_redeem_code, daemon=True).start()
         ).pack(side="left")
 
+        # Блок активации купленной игры (показывается только если нажали Play на игре)
+        if game:
+            sep2 = ctk.CTkFrame(self._login_win, fg_color="transparent")
+            sep2.pack(pady=(14, 0), fill="x", padx=60)
+            ctk.CTkFrame(sep2, fg_color="#2a2a44", height=1).pack(
+                fill="x", side="left", expand=True, pady=9)
+            ctk.CTkLabel(sep2, text="  or  ", font=ctk.CTkFont(size=11),
+                         text_color="#444466").pack(side="left")
+            ctk.CTkFrame(sep2, fg_color="#2a2a44", height=1).pack(
+                fill="x", side="left", expand=True, pady=9)
+
+            ctk.CTkLabel(
+                self._login_win,
+                text=f"Already bought {game['name']} on Patreon?",
+                font=ctk.CTkFont(size=11), text_color="#444466"
+            ).pack(pady=(2, 0))
+
+            ctk.CTkButton(
+                self._login_win,
+                text=f"🔑  Activate {game['name']}",
+                width=240, height=38,
+                fg_color="#2a4a2a", hover_color="#3a6a3a",
+                border_width=1, border_color="#446644",
+                corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
+                text_color="#aaffaa",
+                command=lambda g=game: threading.Thread(
+                    target=self._do_activate_game, args=(g,), daemon=True).start()
+            ).pack(pady=(4, 16))
+
     def _do_login(self):
         self._set_login_status("Opening browser...")
 
@@ -679,11 +726,12 @@ class LauncherApp(ctk.CTk):
                     "token": params.get("token", [""])[0],
                     "name":  params.get("name",  [""])[0],
                     "tier":  params.get("tier",  [""])[0],
+                    "games": params.get("games", [""])[0],
                 }
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.end_headers()
-                self.wfile.write("<html><body style='background:#111;color:#8f8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'><h2>✅ Готово! Можешь закрыть это окно.</h2></body></html>".encode())
+                self.wfile.write("<html><body style='background:#111;color:#8f8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'><h2>&#10003; Done! You can close this window.</h2></body></html>".encode())
             def log_message(self, *a): pass
 
         srv = HTTPServer(("localhost", port), Handler)
@@ -706,10 +754,12 @@ class LauncherApp(ctk.CTk):
             self._set_login_status("❌ Sign-in not completed. Try again.")
             return
 
+        games_str = r.get("games", "")
         self._auth = {
             "token":       r["token"],
             "name":        r["name"],
             "tier":        r["tier"],
+            "games":       [g for g in games_str.split(",") if g],
             "last_verify": time.time(),
         }
         save_auth(self._auth)
@@ -771,6 +821,133 @@ class LauncherApp(ctk.CTk):
 
         if self._login_win:
             self._login_win.after(0, self._login_win.destroy)
+
+        self._after_login()
+        self._run_pending_action()
+
+    def _show_activate_screen(self, game):
+        """Окно для активации игры, купленной на Patreon (пользователь уже вошёл, но без доступа)."""
+        win = ctk.CTkToplevel(self)
+        win.title("Activate game")
+        win.geometry("360x230")
+        win.resizable(False, False)
+        win.configure(fg_color=COLORS["bg"])
+        win.protocol("WM_DELETE_WINDOW", win.destroy)
+        self._activate_win = win
+
+        ctk.CTkLabel(win, text=f"🔒  {game['name']}",
+                     font=ctk.CTkFont(size=20, weight="bold"),
+                     text_color=COLORS["accent"]).pack(pady=(28, 4))
+
+        ctk.CTkLabel(win, text="You don't have access to this game.",
+                     font=ctk.CTkFont(size=12),
+                     text_color=COLORS["gray"]).pack()
+
+        self._activate_status = ctk.CTkLabel(win, text="",
+                     font=ctk.CTkFont(size=11),
+                     text_color=COLORS["orange"])
+        self._activate_status.pack(pady=(4, 0))
+
+        ctk.CTkButton(
+            win, text="❤  Buy on Patreon",
+            width=240, height=38,
+            fg_color="#FF424D", hover_color="#cc2f38",
+            corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="white",
+            command=lambda: webbrowser.open(PATREON_URL)
+        ).pack(pady=(14, 4))
+
+        ctk.CTkButton(
+            win, text="🔑  Activate (already bought)",
+            width=240, height=38,
+            fg_color="#2a4a2a", hover_color="#3a6a3a",
+            border_width=1, border_color="#446644",
+            corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#aaffaa",
+            command=lambda g=game: threading.Thread(
+                target=self._do_activate_game, args=(g,), daemon=True).start()
+        ).pack()
+
+    def _do_activate_game(self, game):
+        """OAuth через /auth/start_game — активирует купленную игру."""
+        import socket as _sock
+
+        def _status(msg):
+            # Обновляем статус в том окне, которое открыто
+            if self._login_win:
+                self._set_login_status(msg)
+            elif hasattr(self, '_activate_win') and self._activate_win:
+                self._activate_win.after(
+                    0, lambda: self._activate_status.configure(text=msg))
+
+        _status("Opening browser...")
+
+        with _sock.socket() as s:
+            s.bind(('', 0))
+            port = s.getsockname()[1]
+
+        result_holder = [None]
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                parsed = urllib.parse.urlparse(self.path)
+                params = urllib.parse.parse_qs(parsed.query)
+                result_holder[0] = {
+                    "token": params.get("token", [""])[0],
+                    "name":  params.get("name",  [""])[0],
+                    "tier":  params.get("tier",  [""])[0],
+                    "games": params.get("games", [""])[0],
+                }
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(
+                    b"<html><body style='background:#111;color:#8f8;"
+                    b"font-family:sans-serif;display:flex;align-items:center;"
+                    b"justify-content:center;height:100vh;margin:0'>"
+                    b"<h2>\xe2\x9c\x85 Done! You can close this window.</h2>"
+                    b"</body></html>"
+                )
+            def log_message(self, *a): pass
+
+        srv = HTTPServer(("localhost", port), Handler)
+        srv.timeout = 1
+
+        url_params = urllib.parse.urlencode({
+            "game_id":   game["id"],
+            "device_id": DEVICE_ID,
+            "local_port": port,
+        })
+        webbrowser.open(f"{AUTH_SERVER}/auth/start_game?{url_params}")
+        _status("Waiting for browser...")
+
+        for _ in range(180):
+            srv.handle_request()
+            if result_holder[0]:
+                break
+        srv.server_close()
+
+        r = result_holder[0]
+        if not r or not r.get("token"):
+            _status("❌ Not completed. Try again.")
+            return
+
+        games_str = r.get("games", "")
+        self._auth = {
+            "token":       r["token"],
+            "name":        r["name"],
+            "tier":        r["tier"],
+            "games":       [g for g in games_str.split(",") if g],
+            "last_verify": time.time(),
+        }
+        save_auth(self._auth)
+        self._logged_in = True
+
+        # Закрыть окно входа или активации
+        if self._login_win:
+            self._login_win.after(0, self._login_win.destroy)
+        elif hasattr(self, '_activate_win') and self._activate_win:
+            self._activate_win.after(0, self._activate_win.destroy)
 
         self._after_login()
         self._run_pending_action()
