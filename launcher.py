@@ -671,6 +671,8 @@ class LauncherApp(ctk.CTk):
         )
         self._code_entry.pack(side="left", padx=(0, 8))
         self._add_entry_context_menu(self._code_entry)
+        self._code_entry.bind("<Return>", lambda e: threading.Thread(
+            target=self._do_redeem_code, daemon=True).start())
         ctk.CTkButton(
             entry_row, text="→", width=44, height=36,
             fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
