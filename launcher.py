@@ -41,25 +41,59 @@ GAMES_DIR.mkdir(parents=True, exist_ok=True)
 TOKEN_FILE = BASE_DIR / "auth_token.json"
 
 def get_device_id():
-    import subprocess as _sp
-    # Попытка 1: wmic (Windows 10 и старше)
+    """Возвращает хэш реального железа (CPU + материнка + MAC + диск).
+    Файл device_id.txt используется только если ВСЕ аппаратные методы недоступны."""
+    import subprocess as _sp, hashlib
+    parts = []
+
+    # 1. UUID материнской платы — wmic (Win 10)
     try:
         out = _sp.check_output("wmic csproduct get UUID",
                                shell=True, stderr=_sp.DEVNULL).decode()
         uid = out.split("\n")[1].strip()
         if uid and uid.upper() not in ("", "UUID"):
-            return uid
+            parts.append("mb:" + uid)
     except: pass
-    # Попытка 2: PowerShell / Get-CimInstance (Windows 11)
+
+    # 2. UUID материнской платы — PowerShell (Win 11)
+    if not any(p.startswith("mb:") for p in parts):
+        try:
+            out = _sp.check_output(
+                'powershell -Command "(Get-CimInstance Win32_ComputerSystemProduct).UUID"',
+                shell=True, stderr=_sp.DEVNULL).decode()
+            uid = out.strip()
+            if uid:
+                parts.append("mb:" + uid)
+        except: pass
+
+    # 3. ID процессора
     try:
-        out = _sp.check_output(
-            'powershell -Command "(Get-CimInstance Win32_ComputerSystemProduct).UUID"',
-            shell=True, stderr=_sp.DEVNULL).decode()
-        uid = out.strip()
-        if uid:
-            return uid
+        out = _sp.check_output("wmic cpu get ProcessorId /value",
+                               shell=True, stderr=_sp.DEVNULL).decode()
+        cpu = ''.join(out.split()).replace("ProcessorId=", "")
+        if cpu:
+            parts.append("cpu:" + cpu)
     except: pass
-    # Fallback: сохранённый случайный UUID
+
+    # 4. MAC-адрес сетевой карты
+    try:
+        parts.append("mac:" + hex(uuid.getnode()))
+    except: pass
+
+    # 5. Серийный номер диска
+    try:
+        out = _sp.check_output("wmic diskdrive get SerialNumber /value",
+                               shell=True, stderr=_sp.DEVNULL).decode()
+        serial = ''.join(out.split()).replace("SerialNumber=", "")
+        if serial:
+            parts.append("disk:" + serial)
+    except: pass
+
+    if parts:
+        combined = "|".join(parts)
+        return hashlib.sha256(combined.encode()).hexdigest()[:40]
+
+    # Последний резерв — если железо вообще не читается (очень редко)
     _id_file = BASE_DIR / "device_id.txt"
     if _id_file.exists():
         return _id_file.read_text().strip()
