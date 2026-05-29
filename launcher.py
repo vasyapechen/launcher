@@ -597,7 +597,7 @@ class LauncherApp(ctk.CTk):
         self._login_game = game   # игра, для которой открывается вход
         self._login_win = ctk.CTkToplevel(self)
         self._login_win.title("Sign in")
-        h = 570 if game else 480
+        h = 620 if game else 560
         self._login_win.geometry(f"420x{h}")
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
