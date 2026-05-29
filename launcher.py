@@ -438,7 +438,9 @@ class LauncherApp(ctk.CTk):
     def _launch(self, game):
         exe = self._state.get(game['id'], {}).get('exe')
         if exe and os.path.exists(exe):
-            subprocess.Popen([exe], cwd=os.path.dirname(exe))
+            token = self._auth.get("token", "")
+            cmd = [exe, "--token", token, "--device", DEVICE_ID] if token else [exe]
+            subprocess.Popen(cmd, cwd=os.path.dirname(exe))
             self._set_status(f"Запущена: {game['name']}")
         else:
             self._set_status("Файл не найден — переустановите игру")
