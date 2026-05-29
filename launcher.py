@@ -11,6 +11,7 @@ LAUNCHER_VERSION = "1.0.0"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
+PATREON_URL  = "https://www.patreon.com/cw/vasya_pechen"
 
 # ── Пути ─────────────────────────────────────────────────
 BASE_DIR    = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
@@ -282,6 +283,14 @@ class LauncherApp(ctk.CTk):
                 target=self._load_catalog, daemon=True).start()
         )
         self.refresh_btn.pack(side="right", padx=4)
+
+        ctk.CTkButton(
+            hdr, text="❤  Patreon", width=100, height=32,
+            fg_color="#FF424D", hover_color="#cc2f38",
+            corner_radius=8, font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="white",
+            command=lambda: webbrowser.open(PATREON_URL)
+        ).pack(side="right", padx=(8, 4))
 
         self.folder_btn = ctk.CTkButton(
             hdr, text="📁", width=38, height=32,
