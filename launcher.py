@@ -479,10 +479,54 @@ class LauncherApp(ctk.CTk):
             self._cards[game['id']] = card
 
     # ── Действие по кнопке ───────────────────────────────
+    def _bring_to_front(self, win):
+        """Поднять окно поверх остальных и дать фокус."""
+        try:
+            win.transient(self)
+            win.lift()
+            win.focus_force()
+            win.attributes("-topmost", True)
+            win.after(300, lambda: win.attributes("-topmost", False))
+        except Exception:
+            pass
+
+    def _confirm_delete(self, game):
+        """Окно подтверждения удаления игры."""
+        win = ctk.CTkToplevel(self)
+        win.title("Удаление")
+        win.geometry("360x190")
+        win.resizable(False, False)
+        win.configure(fg_color=COLORS["bg"])
+        win.protocol("WM_DELETE_WINDOW", win.destroy)
+        self._bring_to_front(win)
+
+        ctk.CTkLabel(win, text=f"🗑  Удалить {game['name']}?",
+                     font=ctk.CTkFont(size=17, weight="bold"),
+                     text_color=COLORS["accent"]).pack(pady=(26, 6))
+        ctk.CTkLabel(win, text="Файлы игры будут удалены.\nЕё можно будет скачать снова.",
+                     font=ctk.CTkFont(size=12),
+                     text_color=COLORS["gray"]).pack()
+
+        btn_row = ctk.CTkFrame(win, fg_color="transparent")
+        btn_row.pack(pady=(20, 0))
+        ctk.CTkButton(
+            btn_row, text="Отмена", width=120, height=36,
+            fg_color="#2a2a44", hover_color="#3a3a5a",
+            corner_radius=10, font=ctk.CTkFont(size=13),
+            command=win.destroy
+        ).pack(side="left", padx=(0, 10))
+        ctk.CTkButton(
+            btn_row, text="🗑  Удалить", width=120, height=36,
+            fg_color="#8a2a2a", hover_color="#aa3a3a",
+            corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="white",
+            command=lambda: (win.destroy(), self._delete(game))
+        ).pack(side="left")
+
     def _on_action(self, game, delete=False):
         # Удаление доступно всегда — даже без входа/подписки
         if delete:
-            self._delete(game)
+            self._confirm_delete(game)
             return
         if not self._logged_in:
             self._pending_action = lambda: self._on_action(game, delete)
@@ -603,6 +647,7 @@ class LauncherApp(ctk.CTk):
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
         self._login_win.protocol("WM_DELETE_WINDOW", self._login_win.destroy)
+        self._bring_to_front(self._login_win)
 
         ctk.CTkLabel(self._login_win, text="⚔  VASYA_PECHEN",
                      font=ctk.CTkFont(size=26, weight="bold"),
@@ -884,6 +929,7 @@ class LauncherApp(ctk.CTk):
         win.configure(fg_color=COLORS["bg"])
         win.protocol("WM_DELETE_WINDOW", win.destroy)
         self._activate_win = win
+        self._bring_to_front(win)
 
         ctk.CTkLabel(win, text=f"🔒  {game['name']}",
                      font=ctk.CTkFont(size=20, weight="bold"),
