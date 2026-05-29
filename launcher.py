@@ -480,12 +480,13 @@ class LauncherApp(ctk.CTk):
 
     # ── Действие по кнопке ───────────────────────────────
     def _on_action(self, game, delete=False):
+        # Удаление доступно всегда — даже без входа/подписки
+        if delete:
+            self._delete(game)
+            return
         if not self._logged_in:
             self._pending_action = lambda: self._on_action(game, delete)
             self._show_login_screen(game=game)
-            return
-        if delete:
-            self._delete(game)
             return
         # Проверяем доступ к конкретной игре
         if not self._has_game_access(game):
