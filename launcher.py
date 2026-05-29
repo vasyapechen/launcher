@@ -15,6 +15,7 @@ PATREON_URL  = "https://www.patreon.com/cw/vasya_pechen"
 
 # ── Пути ─────────────────────────────────────────────────
 BASE_DIR    = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
+ICON_FILE   = Path(sys._MEIPASS) / "icon.ico" if getattr(sys, 'frozen', False) else BASE_DIR / "icon.ico"
 STATE_FILE  = BASE_DIR / "games_state.json"
 CACHE_FILE  = BASE_DIR / "catalog_cache.json"
 CONFIG_FILE = BASE_DIR / "launcher_config.json"
@@ -251,6 +252,8 @@ class LauncherApp(ctk.CTk):
         self.geometry("780x520")
         self.minsize(500, 380)
         self.configure(fg_color=COLORS["bg"])
+        try: self.iconbitmap(str(ICON_FILE))
+        except: pass
 
         # Убираем стандартный заголовок и делаем свой
         self._state   = load_state()
