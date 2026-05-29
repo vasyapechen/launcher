@@ -323,7 +323,7 @@ class LauncherApp(ctk.CTk):
         self._set_status("Проверка авторизации...")
         token = self._auth.get("token")
         last_verify = self._auth.get("last_verify", 0)
-        need_verify = (time.time() - last_verify) > 86400 * 3  # раз в 3 дня
+        need_verify = (time.time() - last_verify) > 86400  # раз в день
 
         if token and not need_verify:
             # Токен свежий — пропускаем онлайн-проверку
