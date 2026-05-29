@@ -516,7 +516,7 @@ class LauncherApp(ctk.CTk):
     def _show_login_screen(self):
         self._login_win = ctk.CTkToplevel(self)
         self._login_win.title("Войти")
-        self._login_win.geometry("420x300")
+        self._login_win.geometry("420x420")
         self._login_win.resizable(False, False)
         self._login_win.configure(fg_color=COLORS["bg"])
         self._login_win.grab_set()
@@ -524,7 +524,7 @@ class LauncherApp(ctk.CTk):
 
         ctk.CTkLabel(self._login_win, text="⚔  MY GAMES",
                      font=ctk.CTkFont(size=26, weight="bold"),
-                     text_color=COLORS["accent"]).pack(pady=(40, 8))
+                     text_color=COLORS["accent"]).pack(pady=(30, 8))
 
         ctk.CTkLabel(self._login_win, text="Требуется подписка Patreon",
                      font=ctk.CTkFont(size=13),
@@ -533,7 +533,7 @@ class LauncherApp(ctk.CTk):
         self._login_status = ctk.CTkLabel(self._login_win, text="",
                      font=ctk.CTkFont(size=11),
                      text_color=COLORS["orange"])
-        self._login_status.pack(pady=(8, 0))
+        self._login_status.pack(pady=(6, 0))
 
         ctk.CTkButton(
             self._login_win, text="🔑  Войти через Patreon",
@@ -541,7 +541,49 @@ class LauncherApp(ctk.CTk):
             fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
             corner_radius=12, font=ctk.CTkFont(size=14, weight="bold"),
             command=lambda: threading.Thread(target=self._do_login, daemon=True).start()
-        ).pack(pady=(20, 0))
+        ).pack(pady=(16, 0))
+
+        # Разделитель "— или —"
+        sep_frame = ctk.CTkFrame(self._login_win, fg_color="transparent")
+        sep_frame.pack(pady=(18, 0), fill="x", padx=60)
+        ctk.CTkFrame(sep_frame, fg_color="#2a2a44", height=1).pack(
+            fill="x", side="left", expand=True, pady=9)
+        ctk.CTkLabel(sep_frame, text="  или  ", font=ctk.CTkFont(size=11),
+                     text_color="#444466").pack(side="left")
+        ctk.CTkFrame(sep_frame, fg_color="#2a2a44", height=1).pack(
+            fill="x", side="left", expand=True, pady=9)
+
+        # Кнопка «Ввести код»
+        self._code_toggle_btn = ctk.CTkButton(
+            self._login_win, text="🎟  Ввести код доступа",
+            width=240, height=38,
+            fg_color="transparent", hover_color="#1a1a2e",
+            border_width=1, border_color="#444466",
+            corner_radius=10, font=ctk.CTkFont(size=13),
+            text_color="#aaaacc",
+            command=self._show_code_entry
+        )
+        self._code_toggle_btn.pack(pady=(6, 0))
+
+        # Поле ввода кода (скрыто до нажатия)
+        self._code_entry_frame = ctk.CTkFrame(self._login_win, fg_color="transparent")
+        entry_row = ctk.CTkFrame(self._code_entry_frame, fg_color="transparent")
+        entry_row.pack()
+        self._code_entry = ctk.CTkEntry(
+            entry_row,
+            placeholder_text="GUEST-XXXXXX",
+            width=190, height=36,
+            font=ctk.CTkFont(size=13, family="Courier"),
+            justify="center"
+        )
+        self._code_entry.pack(side="left", padx=(0, 8))
+        ctk.CTkButton(
+            entry_row, text="→", width=44, height=36,
+            fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
+            corner_radius=8, font=ctk.CTkFont(size=16, weight="bold"),
+            command=lambda: threading.Thread(
+                target=self._do_redeem_code, daemon=True).start()
+        ).pack(side="left")
 
     def _do_login(self):
         self._set_login_status("Открываю браузер...")
@@ -593,6 +635,60 @@ class LauncherApp(ctk.CTk):
             "token":       r["token"],
             "name":        r["name"],
             "tier":        r["tier"],
+            "last_verify": time.time(),
+        }
+        save_auth(self._auth)
+
+        if self._login_win:
+            self._login_win.after(0, self._login_win.destroy)
+
+        self._after_login()
+
+    def _show_code_entry(self):
+        """Показать/скрыть поле ввода кода."""
+        if self._code_entry_frame.winfo_ismapped():
+            self._code_entry_frame.pack_forget()
+        else:
+            self._code_entry_frame.pack(pady=(10, 0))
+            self._code_entry.focus()
+
+    def _do_redeem_code(self):
+        code = self._code_entry.get().strip().upper()
+        if not code:
+            self._set_login_status("❌ Введи код")
+            return
+        self._set_login_status("Проверяю код...")
+        try:
+            payload = json.dumps({
+                "code": code,
+                "device_id": DEVICE_ID,
+                "name": "Гость"
+            }).encode()
+            req = _ur.Request(
+                f"{AUTH_SERVER}/auth/redeem_code", data=payload,
+                headers={"Content-Type": "application/json",
+                         "User-Agent": "FlagRaceLauncher/1.0"}
+            )
+            r = _ur.urlopen(req, timeout=10)
+            result = json.loads(r.read())
+        except Exception as e:
+            self._set_login_status(f"❌ Ошибка соединения")
+            return
+
+        if not result.get("ok"):
+            err = result.get("error", "")
+            msgs = {
+                "invalid_code":       "❌ Неверный код",
+                "code_expired":       "❌ Срок действия кода истёк",
+                "code_limit_reached": "❌ Код уже использован максимальное число раз",
+            }
+            self._set_login_status(msgs.get(err, f"❌ {err}"))
+            return
+
+        self._auth = {
+            "token":       result["token"],
+            "name":        result.get("name", "Гость"),
+            "tier":        result.get("tier", "guest"),
             "last_verify": time.time(),
         }
         save_auth(self._auth)
