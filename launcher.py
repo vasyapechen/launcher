@@ -134,14 +134,28 @@ class GameCard(ctk.CTkFrame):
                                       text_color=COLORS["gray"])
         self._prog_frame.pack_forget()   # скрыт
 
-        # Кнопка
+        # Кнопка основная
         self.btn = ctk.CTkButton(
             self, text=btn_text, width=170, height=38,
             fg_color=btn_col, hover_color=_brighten(btn_col),
             corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
             command=lambda: self.on_action(self.game)
         )
-        self.btn.pack(pady=(10, 18))
+        self.btn.pack(pady=(10, 4))
+
+        # Кнопка удаления (только если установлена)
+        if inst_ver:
+            self.del_btn = ctk.CTkButton(
+                self, text="🗑  Удалить", width=170, height=26,
+                fg_color="transparent", hover_color="#3a1a1a",
+                border_width=1, border_color="#552222",
+                corner_radius=8, font=ctk.CTkFont(size=11),
+                text_color="#994444",
+                command=lambda: self.on_action(self.game, delete=True)
+            )
+            self.del_btn.pack(pady=(0, 14))
+        else:
+            ctk.CTkFrame(self, fg_color="transparent", height=14).pack()
 
     def show_progress(self, value, text=""):
         self._prog_frame.pack(pady=(8, 0), padx=16, fill="x")
@@ -315,13 +329,32 @@ class LauncherApp(ctk.CTk):
             self._cards[game['id']] = card
 
     # ── Действие по кнопке ───────────────────────────────
-    def _on_action(self, game):
+    def _on_action(self, game, delete=False):
+        if delete:
+            self._delete(game)
+            return
         inst = self._state.get(game['id'], {})
         if inst.get('version') == game['version']:
             self._launch(game)
         else:
             threading.Thread(target=self._download,
                              args=(game,), daemon=True).start()
+
+    # ── Удаление игры ────────────────────────────────────
+    def _delete(self, game):
+        import shutil
+        gid = game['id']
+        game_dir = GAMES_DIR / gid
+        try:
+            if game_dir.exists():
+                shutil.rmtree(game_dir)
+        except Exception as e:
+            self._set_status(f"Ошибка удаления: {e}")
+            return
+        self._state.pop(gid, None)
+        save_state(self._state)
+        self._set_status(f"{game['name']} удалена")
+        self.after(0, self._render)
 
     # ── Запуск игры ──────────────────────────────────────
     def _launch(self, game):
