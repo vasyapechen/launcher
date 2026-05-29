@@ -670,6 +670,7 @@ class LauncherApp(ctk.CTk):
             justify="center"
         )
         self._code_entry.pack(side="left", padx=(0, 8))
+        self._add_entry_context_menu(self._code_entry)
         ctk.CTkButton(
             entry_row, text="→", width=44, height=36,
             fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
@@ -706,6 +707,38 @@ class LauncherApp(ctk.CTk):
                 command=lambda g=game: threading.Thread(
                     target=self._do_activate_game, args=(g,), daemon=True).start()
             ).pack(pady=(4, 16))
+
+    def _add_entry_context_menu(self, entry):
+        """Контекстное меню (ПКМ) + вставка при русской раскладке (Ctrl+М и др.)."""
+        import tkinter as tk
+        try:
+            inner = entry._entry   # tk.Entry внутри CTkEntry
+        except AttributeError:
+            return
+
+        menu = tk.Menu(
+            inner, tearoff=0,
+            bg="#1a1a2e", fg="#e8e8f8",
+            activebackground="#2a2a4e", activeforeground="#e8e8f8",
+            bd=0
+        )
+        menu.add_command(label="Вырезать",     command=lambda: inner.event_generate("<<Cut>>"))
+        menu.add_command(label="Копировать",   command=lambda: inner.event_generate("<<Copy>>"))
+        menu.add_command(label="Вставить",     command=lambda: inner.event_generate("<<Paste>>"))
+        menu.add_separator()
+        menu.add_command(label="Выделить всё", command=lambda: inner.event_generate("<<SelectAll>>"))
+
+        def _show_menu(ev):
+            try:    menu.tk_popup(ev.x_root, ev.y_root)
+            finally: menu.grab_release()
+
+        inner.bind("<Button-3>", _show_menu)
+
+        # Русская раскладка: V→М  C→С  X→Ч  A→Ф
+        inner.bind("<Control-м>", lambda e: inner.event_generate("<<Paste>>"))
+        inner.bind("<Control-с>", lambda e: inner.event_generate("<<Copy>>"))
+        inner.bind("<Control-ч>", lambda e: inner.event_generate("<<Cut>>"))
+        inner.bind("<Control-ф>", lambda e: inner.event_generate("<<SelectAll>>"))
 
     def _do_login(self):
         self._set_login_status("Opening browser...")
