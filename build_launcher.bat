@@ -17,6 +17,8 @@ if exist build rmdir /s /q build >nul 2>&1
 echo Building...
 %PY% -m PyInstaller --onefile --noconsole ^
   --name "Launcher" ^
+  --icon "icon.ico" ^
+  --add-data "icon.ico;." ^
   --hidden-import=customtkinter ^
   --collect-all customtkinter ^
   launcher.py
