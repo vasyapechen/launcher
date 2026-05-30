@@ -497,7 +497,7 @@ class LauncherApp(ctk.CTk):
                      text_color=COLORS["accent"]).pack(side="left", padx=20)
 
         self.lang_btn = ctk.CTkButton(
-            hdr, text=f"🌐 {'EN' if _lang=='ru' else 'RU'}", width=58, height=32,
+            hdr, text=f"🌐 {_lang.upper()}", width=58, height=32,
             fg_color="transparent", hover_color="#222244",
             corner_radius=8, font=ctk.CTkFont(size=12),
             command=self._toggle_lang
@@ -1598,7 +1598,7 @@ class LauncherApp(ctk.CTk):
 
     def _apply_lang(self):
         try:
-            self.lang_btn.configure(text=f"🌐 {'EN' if _lang=='ru' else 'RU'}")
+            self.lang_btn.configure(text=f"🌐 {_lang.upper()}")
             self.mycodes_btn.configure(text=tr('my_access'))
         except Exception: pass
         self._render()            # пересобрать карточки на новом языке
