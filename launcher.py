@@ -649,6 +649,11 @@ class LauncherApp(ctk.CTk):
                                         text_color=COLORS["orange"])
         self._upd_status.pack(pady=(8, 0))
 
+        self._upd_bar = ctk.CTkProgressBar(win, width=320, height=8, corner_radius=4)
+        self._upd_bar.set(0)
+        self._upd_bar.pack(pady=(6, 0))
+        self._upd_bar.pack_forget()   # показываем только во время загрузки
+
         btns = ctk.CTkFrame(win, fg_color="transparent")
         btns.pack(pady=(16, 0))
         ctk.CTkButton(btns, text=tr('upd_later'), width=110, height=36,
@@ -662,6 +667,17 @@ class LauncherApp(ctk.CTk):
                           target=self._do_launcher_update,
                           args=(data, win), daemon=True).start()
                       ).grid(row=0, column=1, padx=6)
+
+    def _upd_progress(self, pct, text):
+        """Обновляет прогресс-бар и текст в окне обновления лаунчера."""
+        def apply():
+            try:
+                self._upd_status.configure(text=text)
+                if not self._upd_bar.winfo_ismapped():
+                    self._upd_bar.pack(pady=(6, 0))
+                self._upd_bar.set(max(0.0, min(1.0, pct)))
+            except Exception: pass
+        self.after(0, apply)
 
     def _do_launcher_update(self, data, win=None):
         """Скачивает zip новой версии (onedir) и заменяет папку лаунчера через bat."""
@@ -688,7 +704,25 @@ class LauncherApp(ctk.CTk):
             status(tr('upd_downloading'))
             req = _ur.Request(url, headers={"User-Agent": "Launcher"})
             with _ur.urlopen(req, timeout=300, context=SSL_CTX) as r, open(zip_path, "wb") as f:
-                shutil.copyfileobj(r, f)
+                total = int(r.getheader("Content-Length") or 0)
+                done = 0; chunk = 65536; t0 = time.time(); last = 0.0
+                while True:
+                    buf = r.read(chunk)
+                    if not buf: break
+                    f.write(buf); done += len(buf)
+                    now = time.time()
+                    if now - last >= 0.2:
+                        last = now
+                        spd = done / (now - t0) / 1048576 if now > t0 else 0
+                        d_mb = done / 1048576
+                        if total > 0:
+                            t_mb = total / 1048576
+                            self._upd_progress(done / total,
+                                f"{d_mb:.1f} / {t_mb:.1f} MB · {spd:.1f} MB/s")
+                        else:
+                            self._upd_progress(0, f"{d_mb:.1f} MB · {spd:.1f} MB/s")
+                if total > 0:
+                    self._upd_progress(1.0, f"{total/1048576:.1f} / {total/1048576:.1f} MB")
 
             status(tr('upd_extracting'))
             extract_dir = work / "files"
