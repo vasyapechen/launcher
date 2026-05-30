@@ -1,6 +1,6 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.exe",
-  "changelog": "Исправлен перезапуск после обновления (без ошибки и мельканий)."
+  "changelog": "Тестовая версия для проверки автообновления."
 }
