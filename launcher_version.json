@@ -1,6 +1,6 @@
 {
-  "version": "1.0.11",
+  "version": "1.0.12",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.zip",
-  "changelog": "Добавлен раздел «Мои доступы» — список кодов, активированных на этом компьютере."
+  "changelog": "«Мои доступы» теперь показывают подписку Patreon, бессрочные покупки и коды."
 }
