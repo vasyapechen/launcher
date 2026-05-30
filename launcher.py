@@ -1,5 +1,6 @@
 import customtkinter as ctk
 import json, os, sys, threading, zipfile, subprocess, webbrowser, uuid, time
+from datetime import datetime
 import urllib.request as _ur
 import urllib.parse
 from pathlib import Path
@@ -383,6 +384,14 @@ class LauncherApp(ctk.CTk):
             command=lambda: webbrowser.open(PATREON_URL)
         ).pack(side="right", padx=(8, 4))
 
+        self.mycodes_btn = ctk.CTkButton(
+            hdr, text="🎟 Мои доступы", width=130, height=32,
+            fg_color="#2a2a44", hover_color="#3a3a5a",
+            corner_radius=8, font=ctk.CTkFont(size=12),
+            command=self._show_my_codes
+        )
+        self.mycodes_btn.pack(side="right", padx=(8, 4))
+
         self.folder_btn = ctk.CTkButton(
             hdr, text="📁", width=38, height=32,
             fg_color="transparent", hover_color="#222244",
@@ -696,6 +705,82 @@ class LauncherApp(ctk.CTk):
             win.after(300, lambda: win.attributes("-topmost", False))
         except Exception:
             pass
+
+    # ── Мои доступы (коды, привязанные к этому железу) ───
+    def _show_my_codes(self):
+        win = ctk.CTkToplevel(self)
+        win.title("Мои доступы")
+        win.geometry("460x420")
+        win.configure(fg_color=COLORS["bg"])
+        win.protocol("WM_DELETE_WINDOW", win.destroy)
+        self._bring_to_front(win)
+
+        ctk.CTkLabel(win, text="🎟  Мои доступы",
+                     font=ctk.CTkFont(size=18, weight="bold"),
+                     text_color=COLORS["accent"]).pack(pady=(18, 2))
+        ctk.CTkLabel(win, text="Коды, активированные на этом компьютере",
+                     font=ctk.CTkFont(size=11),
+                     text_color=COLORS["gray"]).pack()
+
+        body = ctk.CTkScrollableFrame(win, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=14, pady=12)
+        status = ctk.CTkLabel(body, text="Загрузка...",
+                              font=ctk.CTkFont(size=12),
+                              text_color=COLORS["gray"])
+        status.pack(pady=20)
+
+        def load():
+            data = None
+            try:
+                payload = json.dumps({"device_id": DEVICE_ID}).encode()
+                req = _ur.Request(f"{AUTH_SERVER}/auth/my_codes", data=payload,
+                                  headers={"Content-Type": "application/json",
+                                           "User-Agent": "FlagRaceLauncher/1.0"})
+                data = json.loads(_ur.urlopen(req, timeout=10).read())
+            except Exception as e:
+                data = {"ok": False, "error": str(e)}
+            self.after(0, lambda: render(data))
+
+        def render(data):
+            try: status.destroy()
+            except Exception: pass
+            if not data or not data.get("ok"):
+                ctk.CTkLabel(body, text="Не удалось загрузить доступы",
+                             text_color=COLORS["orange"]).pack(pady=20)
+                return
+            codes = data.get("codes", [])
+            if not codes:
+                ctk.CTkLabel(body, text="Активных кодов на этом железе нет",
+                             text_color=COLORS["gray"]).pack(pady=20)
+                return
+            now = time.time()
+            game_names = {g['id']: g['name'] for g in (self._catalog or [])}
+            for c in codes:
+                exp = c.get("expires_at")
+                gid = c.get("game_id")
+                game = game_names.get(gid, gid) if gid else "Все игры"
+                if exp:
+                    left = (exp - now) / 86400
+                    if left > 0:
+                        when = datetime.fromtimestamp(exp).strftime("%d.%m.%Y %H:%M")
+                        sub, col = f"до {when}  (≈{left:.1f} дн.)", COLORS["green"]
+                    else:
+                        sub, col = "истёк", COLORS["gray"]
+                else:
+                    sub, col = "бессрочный", COLORS["green"]
+
+                card = ctk.CTkFrame(body, fg_color=COLORS["card"], corner_radius=10)
+                card.pack(fill="x", pady=5)
+                ctk.CTkLabel(card, text=f"🎮 {game}",
+                             font=ctk.CTkFont(size=13, weight="bold"),
+                             text_color="#e8e8f8").pack(anchor="w", padx=12, pady=(8, 0))
+                ctk.CTkLabel(card, text=c.get("code", ""),
+                             font=ctk.CTkFont(size=11),
+                             text_color=COLORS["gray"]).pack(anchor="w", padx=12)
+                ctk.CTkLabel(card, text=sub, font=ctk.CTkFont(size=11),
+                             text_color=col).pack(anchor="w", padx=12, pady=(0, 8))
+
+        threading.Thread(target=load, daemon=True).start()
 
     def _confirm_delete(self, game):
         """Окно подтверждения удаления игры."""
