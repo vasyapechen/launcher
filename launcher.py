@@ -15,7 +15,7 @@ except Exception:
     pass
 
 # ── Версия и URLs ────────────────────────────────────────
-LAUNCHER_VERSION = "1.0.6"
+LAUNCHER_VERSION = "1.0.7"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
@@ -543,6 +543,9 @@ class LauncherApp(ctk.CTk):
                 "    goto trymove\r\n"
                 "  )\r\n"
                 ")\r\n"
+                # пауза, чтобы антивирус успел проверить свежий файл
+                # (иначе при распаковке onefile бывает "Failed to load Python DLL")
+                "ping -n 5 127.0.0.1 >nul\r\n"
                 # 3) запустить обновлённый лаунчер и удалить себя
                 f'start "" "{name}"\r\n'
                 'del "%~f0"\r\n'
