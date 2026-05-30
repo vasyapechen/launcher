@@ -55,6 +55,30 @@ def game_folder(game):
     name = (game.get('name') or game.get('id') or 'Game').strip()
     return name.replace(' ', '') or game.get('id', 'Game')
 
+def ensure_dir_case(desired):
+    """Привести регистр существующей папки к desired (Windows, регистр в путях не различается)."""
+    try:
+        desired = Path(desired)
+        parent  = desired.parent
+        if not parent.exists():
+            return
+        target = desired.name
+        for entry in os.scandir(parent):
+            if (entry.is_dir() and entry.name != target
+                    and entry.name.lower() == target.lower()):
+                src = parent / entry.name
+                tmp = parent / (target + "_casetmp")
+                try:
+                    os.rename(src, tmp)   # двухшаговое переименование для смены регистра
+                    os.rename(tmp, desired)
+                except Exception:
+                    try:
+                        if tmp.exists() and not desired.exists():
+                            os.rename(tmp, desired)
+                    except Exception: pass
+                break
+    except Exception: pass
+
 def load_config():
     try:
         if CONFIG_FILE.exists():
@@ -68,6 +92,7 @@ def save_config(cfg):
 
 _config   = load_config()
 GAMES_DIR = Path(_config.get("games_dir", str(DEFAULT_GAMES_DIR)))
+ensure_dir_case(GAMES_DIR)               # привести "games" -> "Games", если уже есть
 GAMES_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Auth ──────────────────────────────────────────────────
@@ -623,9 +648,10 @@ class LauncherApp(ctk.CTk):
         changed = False
         for game in (self._catalog or []):
             gid = game['id']
+            gdir = GAMES_DIR / game_folder(game)
+            ensure_dir_case(gdir)        # привести "flagrace" -> "FlagRace", если уже есть
             if self._state.get(gid, {}).get('version'):
                 continue
-            gdir = GAMES_DIR / game_folder(game)
             if gdir.exists():
                 exes = sorted(gdir.rglob("*.exe"), key=lambda p: len(p.parts))
                 if exes:
