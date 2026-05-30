@@ -1,6 +1,6 @@
 {
-  "version": "1.0.10",
+  "version": "1.0.11",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.zip",
-  "changelog": "Автоопределение уже скачанных игр, папка C:\\Games\\FlagRace, проверка автообновления через UAC."
+  "changelog": "Добавлен раздел «Мои доступы» — список кодов, активированных на этом компьютере."
 }
