@@ -122,6 +122,7 @@ GAMES_DIR.mkdir(parents=True, exist_ok=True)
 LANG = {
   "ru": {
     "my_access":"🎟 Мои доступы","games_folder":"Папка игр",
+    "guide":"📖 Инструкция","guide_window":"Инструкция","close":"Закрыть",
     "folder_changed":"Папка изменена","checking_auth":"Проверка входа...",
     "sign_in_to_play":"Войдите, чтобы играть","welcome":"Добро пожаловать, {name}!",
     "loading_catalog":"Загрузка каталога...","games_count":"{n} игр",
@@ -160,6 +161,7 @@ LANG = {
   },
   "en": {
     "my_access":"🎟 My access","games_folder":"Games folder",
+    "guide":"📖 Guide","guide_window":"Guide","close":"Close",
     "folder_changed":"Folder changed","checking_auth":"Checking auth...",
     "sign_in_to_play":"Sign in to play","welcome":"Welcome, {name}!",
     "loading_catalog":"Loading catalog...","games_count":"{n} games",
@@ -408,6 +410,17 @@ class GameCard(ctk.CTkFrame):
             command=lambda: self.on_action(self.game)
         )
         self.btn.pack(pady=(10, 4))
+
+        # Кнопка инструкции (если в каталоге есть guide)
+        if self.game.get('guide'):
+            ctk.CTkButton(
+                self, text=tr('guide'), width=170, height=24,
+                fg_color="transparent", hover_color="#1a1a2e",
+                border_width=1, border_color="#33335a",
+                corner_radius=8, font=ctk.CTkFont(size=11),
+                text_color="#9999bb",
+                command=lambda: self.on_action(self.game, guide=True)
+            ).pack(pady=(0, 4))
 
         # Кнопка удаления (только если установлена)
         if inst_ver:
@@ -926,6 +939,31 @@ class LauncherApp(ctk.CTk):
 
         threading.Thread(target=load, daemon=True).start()
 
+    # ── Инструкция по игре (из catalog.json) ─────────────
+    def _show_guide(self, game):
+        guide = game.get('guide') or {}
+        text = guide.get(_lang) or guide.get('ru') or guide.get('en') or ""
+        win = ctk.CTkToplevel(self)
+        win.title(f"{game['name']} — {tr('guide_window')}")
+        win.geometry("620x560")
+        win.configure(fg_color=COLORS["bg"])
+        win.protocol("WM_DELETE_WINDOW", win.destroy)
+        self._bring_to_front(win)
+
+        ctk.CTkLabel(win, text=f"📖  {game['name']} — {tr('guide_window')}",
+                     font=ctk.CTkFont(size=17, weight="bold"),
+                     text_color=COLORS["accent"]).pack(pady=(16, 8))
+
+        box = ctk.CTkTextbox(win, fg_color=COLORS["card"], corner_radius=10,
+                             font=ctk.CTkFont(size=13), wrap="word")
+        box.pack(fill="both", expand=True, padx=14, pady=(0, 10))
+        box.insert("1.0", text)
+        box.configure(state="disabled")
+
+        ctk.CTkButton(win, text=tr('close'), width=120, height=34,
+                      fg_color="#2a2a44", hover_color="#3a3a5a",
+                      corner_radius=10, command=win.destroy).pack(pady=(0, 14))
+
     def _confirm_delete(self, game):
         """Окно подтверждения удаления игры."""
         win = ctk.CTkToplevel(self)
@@ -959,7 +997,10 @@ class LauncherApp(ctk.CTk):
             command=lambda: (win.destroy(), self._delete(game))
         ).pack(side="left")
 
-    def _on_action(self, game, delete=False):
+    def _on_action(self, game, delete=False, guide=False):
+        if guide:
+            self._show_guide(game)
+            return
         # Удаление доступно всегда — даже без входа/подписки
         if delete:
             self._confirm_delete(game)
