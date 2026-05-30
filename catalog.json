@@ -3,10 +3,10 @@
     {
       "id": "flagrace",
       "name": "Flag Race",
-      "version": "1.08",
+      "version": "1.09",
       "description": "Гонка флагов стран мира",
       "size_mb": 23,
-      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.08/FlagRace.zip",
+      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.09/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": ["basic", "pro"],
       "is_new": false
