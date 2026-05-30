@@ -13,9 +13,10 @@ echo Installing dependencies...
 %PY% -m pip install pyinstaller customtkinter --quiet
 
 if exist build rmdir /s /q build >nul 2>&1
+if exist dist  rmdir /s /q dist  >nul 2>&1
 
-echo Building...
-%PY% -m PyInstaller --onefile --noconsole ^
+echo Building (onedir)...
+%PY% -m PyInstaller --onedir --noconsole ^
   --name "Launcher" ^
   --icon "icon.ico" ^
   --add-data "icon.ico;." ^
@@ -25,10 +26,11 @@ echo Building...
 
 if errorlevel 1 (echo BUILD FAILED & pause & exit /b 1)
 
-if not exist "dist\games" mkdir "dist\games"
+echo Packing Launcher.zip...
+powershell -NoProfile -Command "Compress-Archive -Path 'dist\Launcher' -DestinationPath 'dist\Launcher.zip' -Force"
 
 echo.
 echo ============================================
-echo   DONE!  dist\Launcher.exe
+echo   DONE!  dist\Launcher\  +  dist\Launcher.zip
 echo ============================================
 pause

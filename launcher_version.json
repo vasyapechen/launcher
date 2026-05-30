@@ -1,6 +1,6 @@
 {
-  "version": "1.0.8",
+  "version": "1.0.9",
   "mandatory": false,
-  "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.exe",
-  "changelog": "Тестовая версия для финальной проверки автообновления."
+  "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.zip",
+  "changelog": "Лаунчер переведён на папочную сборку — ошибка запуска (Python DLL) больше не возникает. Безопасное обновление игр."
 }

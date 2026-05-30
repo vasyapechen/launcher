@@ -15,7 +15,7 @@ except Exception:
     pass
 
 # ── Версия и URLs ────────────────────────────────────────
-LAUNCHER_VERSION = "1.0.8"
+LAUNCHER_VERSION = "1.0.9"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
@@ -497,7 +497,8 @@ class LauncherApp(ctk.CTk):
                       ).grid(row=0, column=1, padx=6)
 
     def _do_launcher_update(self, data, win=None):
-        """Скачивает новый exe и запускает bat-помощник для подмены и перезапуска."""
+        """Скачивает zip новой версии (onedir) и заменяет папку лаунчера через bat."""
+        import shutil
         def status(t):
             try: self.after(0, lambda: self._upd_status.configure(text=t))
             except Exception: pass
@@ -509,45 +510,48 @@ class LauncherApp(ctk.CTk):
             status("Автообновление работает только в собранном .exe"); return
 
         try:
-            cur_exe = Path(sys.executable)
-            new_exe = cur_exe.with_name("Launcher_new.exe")
+            install_dir = Path(sys.executable).parent   # папка с Launcher.exe и _internal
+            exe_name    = Path(sys.executable).name
+            work        = DATA_DIR / "update"
+            try: shutil.rmtree(work)
+            except Exception: pass
+            work.mkdir(parents=True, exist_ok=True)
+            zip_path = work / "launcher.zip"
+
             status("Скачивание обновления...")
             req = _ur.Request(url, headers={"User-Agent": "Launcher"})
-            with _ur.urlopen(req, timeout=120) as r, open(new_exe, "wb") as f:
-                f.write(r.read())
+            with _ur.urlopen(req, timeout=300) as r, open(zip_path, "wb") as f:
+                shutil.copyfileobj(r, f)
 
-            # bat-помощник: ждёт закрытия лаунчера, заменяет exe (с повторами,
-            # пока файл может быть заблокирован), перезапускает, удаляет себя
-            bat = cur_exe.with_name("_update.bat")
-            name, new = cur_exe.name, new_exe.name
+            status("Распаковка...")
+            extract_dir = work / "files"
+            with zipfile.ZipFile(zip_path, 'r') as z:
+                if z.testzip() is not None:
+                    raise IOError("архив повреждён")
+                z.extractall(extract_dir)
+
+            # внутри архива папка с exe — находим её
+            found = list(extract_dir.rglob(exe_name))
+            if not found:
+                raise IOError(f"{exe_name} не найден в архиве")
+            new_root = found[0].parent
+
+            # bat (вне рабочей папки, чтобы можно было её удалить):
+            # ждёт закрытия лаунчера → копирует новые файлы поверх папки → перезапуск
+            bat = DATA_DIR / "_update.bat"
             bat_text = (
                 "@echo off\r\n"
-                "setlocal enableextensions enabledelayedexpansion\r\n"
-                # 1) дождаться полного закрытия старого процесса
                 ":waitproc\r\n"
-                f'tasklist /fi "imagename eq {name}" 2>nul | find /i "{name}" >nul\r\n'
+                f'tasklist /fi "imagename eq {exe_name}" 2>nul | find /i "{exe_name}" >nul\r\n'
                 "if not errorlevel 1 (\r\n"
                 "  ping -n 2 127.0.0.1 >nul\r\n"
                 "  goto waitproc\r\n"
                 ")\r\n"
-                # небольшая пауза, чтобы ОС отпустила файловый дескриптор
                 "ping -n 2 127.0.0.1 >nul\r\n"
-                # 2) заменить exe, повторяя пока файл занят (до ~60 сек)
-                "set /a tries=0\r\n"
-                ":trymove\r\n"
-                f'move /y "{new}" "{name}" >nul 2>&1\r\n'
-                f'if exist "{new}" (\r\n'
-                "  set /a tries+=1\r\n"
-                "  if !tries! lss 30 (\r\n"
-                "    ping -n 3 127.0.0.1 >nul\r\n"
-                "    goto trymove\r\n"
-                "  )\r\n"
-                ")\r\n"
-                # пауза, чтобы антивирус успел проверить свежий файл
-                # (иначе при распаковке onefile бывает "Failed to load Python DLL")
-                "ping -n 5 127.0.0.1 >nul\r\n"
-                # 3) запустить обновлённый лаунчер и удалить себя
-                f'start "" "{name}"\r\n'
+                # /E все подпапки, /IS /IT перезаписать существующие, повторы при блокировке
+                f'robocopy "{new_root}" "{install_dir}" /E /IS /IT /R:10 /W:2 >nul\r\n'
+                f'start "" "{install_dir}\\{exe_name}"\r\n'
+                f'rmdir /s /q "{work}" >nul 2>&1\r\n'
                 'del "%~f0"\r\n'
             )
             bat.write_text(bat_text, encoding="utf-8")
@@ -555,7 +559,7 @@ class LauncherApp(ctk.CTk):
             status("Перезапуск...")
             subprocess.Popen(
                 ["cmd", "/c", str(bat)],
-                cwd=str(cur_exe.parent),
+                cwd=str(DATA_DIR),
                 creationflags=0x08000000  # CREATE_NO_WINDOW
             )
             self.after(300, self.destroy)
