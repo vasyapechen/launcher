@@ -704,8 +704,25 @@ class LauncherApp(ctk.CTk):
             save_state(self._state)
             self.after(0, self._render)
 
-    # ── Скачивание ───────────────────────────────────────
+    # ── Проверка, запущена ли игра ───────────────────────
+    def _game_process_running(self, game):
+        """True, если exe игры сейчас запущен (чтобы не обновлять заблокированные файлы)."""
+        exe = self._state.get(game['id'], {}).get('exe')
+        if not exe:
+            return False
+        name = os.path.basename(exe)
+        try:
+            out = subprocess.check_output(
+                ["tasklist", "/fi", f"imagename eq {name}"],
+                creationflags=0x08000000, stderr=subprocess.DEVNULL
+            ).decode(errors="ignore")
+            return name.lower() in out.lower()
+        except Exception:
+            return False
+
+    # ── Скачивание / обновление ──────────────────────────
     def _download(self, game):
+        import hashlib
         card = self._cards.get(game['id'])
         url  = game.get('download_url', '')
 
@@ -713,9 +730,18 @@ class LauncherApp(ctk.CTk):
             self._set_status("URL не указан в каталоге")
             return
 
-        game_dir = GAMES_DIR / game['id']
+        gid       = game['id']
+        is_update = bool(self._state.get(gid, {}).get('version'))
+
+        # При обновлении нельзя трогать файлы, если игра запущена
+        if is_update and self._game_process_running(game):
+            self._set_status(f"Закройте {game['name']} перед обновлением")
+            return
+
+        game_dir = GAMES_DIR / gid
         game_dir.mkdir(parents=True, exist_ok=True)
-        zip_path = game_dir / f"{game['id']}.zip"
+        zip_path  = game_dir / f"{gid}.zip"
+        part_path = game_dir / f"{gid}.zip.part"   # качаем во временный файл
 
         try:
             if card: self.after(0, lambda: card.show_progress(0, "Connecting..."))
@@ -725,7 +751,7 @@ class LauncherApp(ctk.CTk):
                 total = int(resp.getheader("Content-Length") or 0)
                 done  = 0
                 chunk = 65536
-                with open(zip_path, "wb") as f:
+                with open(part_path, "wb") as f:
                     while True:
                         buf = resp.read(chunk)
                         if not buf:
@@ -739,9 +765,31 @@ class LauncherApp(ctk.CTk):
                             self.after(0, lambda p=pct, d=d_mb, t=t_mb:
                                        card.show_progress(p, f"{d:.1f} / {t:.1f} MB"))
 
-            # Extracting
-            if card: self.after(0, lambda: card.show_progress(1.0, "Extracting..."))
+            # Загрузка не оборвалась посередине?
+            if total > 0 and done < total:
+                raise IOError(f"загрузка прервана ({done}/{total} байт)")
+
+            # Проверка целостности
+            if card: self.after(0, lambda: card.show_progress(1.0, "Checking..."))
+            expected = (game.get('sha256') or "").lower().strip()
+            if expected:
+                h = hashlib.sha256()
+                with open(part_path, "rb") as f:
+                    for b in iter(lambda: f.read(1 << 20), b""):
+                        h.update(b)
+                if h.hexdigest().lower() != expected:
+                    raise IOError("контрольная сумма не совпала (битый файл)")
+
+            # Полностью скачанный файл переименовываем в .zip
+            zip_path.unlink(missing_ok=True)
+            part_path.replace(zip_path)
+
+            # Архив валиден? (защита от повреждённого zip перед распаковкой)
             with zipfile.ZipFile(zip_path, 'r') as z:
+                if z.testzip() is not None:
+                    raise IOError("архив повреждён")
+                # Распаковка поверх (сохранения/настройки/panels не трогаем)
+                if card: self.after(0, lambda: card.show_progress(1.0, "Extracting..."))
                 z.extractall(game_dir)
             zip_path.unlink(missing_ok=True)
 
@@ -750,8 +798,8 @@ class LauncherApp(ctk.CTk):
                           key=lambda p: len(p.parts))  # берём самый верхний
             exe_path = str(exes[0]) if exes else None
 
-            # Сохранить состояние
-            self._state[game['id']] = {
+            # Сохранить состояние (только после успешной распаковки)
+            self._state[gid] = {
                 'version': game['version'],
                 'exe': exe_path
             }
@@ -759,12 +807,14 @@ class LauncherApp(ctk.CTk):
 
             if card: self.after(0, card.done_progress)
             self.after(0, self._render)
-            self._set_status(f"{game['name']} installed ✓")
+            self._set_status(
+                f"{game['name']} {'обновлена' if is_update else 'установлена'} ✓")
 
         except Exception as e:
-            self._set_status(f"Download error: {e}")
+            self._set_status(f"Ошибка загрузки: {e}")
             if card: self.after(0, card.done_progress)
-            # Убрать незавершённый zip
+            # Убрать незавершённые временные файлы; старая установка остаётся как была
+            part_path.unlink(missing_ok=True)
             zip_path.unlink(missing_ok=True)
 
     # ── Экран входа ──────────────────────────────────────
