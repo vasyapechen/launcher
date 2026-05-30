@@ -706,11 +706,11 @@ class LauncherApp(ctk.CTk):
         except Exception:
             pass
 
-    # ── Мои доступы (коды, привязанные к этому железу) ───
+    # ── Мои доступы: подписка, покупки и коды ────────────
     def _show_my_codes(self):
         win = ctk.CTkToplevel(self)
         win.title("Мои доступы")
-        win.geometry("460x420")
+        win.geometry("470x480")
         win.configure(fg_color=COLORS["bg"])
         win.protocol("WM_DELETE_WINDOW", win.destroy)
         self._bring_to_front(win)
@@ -718,7 +718,7 @@ class LauncherApp(ctk.CTk):
         ctk.CTkLabel(win, text="🎟  Мои доступы",
                      font=ctk.CTkFont(size=18, weight="bold"),
                      text_color=COLORS["accent"]).pack(pady=(18, 2))
-        ctk.CTkLabel(win, text="Коды, активированные на этом компьютере",
+        ctk.CTkLabel(win, text="Подписка, покупки и коды на этом компьютере",
                      font=ctk.CTkFont(size=11),
                      text_color=COLORS["gray"]).pack()
 
@@ -730,16 +730,28 @@ class LauncherApp(ctk.CTk):
         status.pack(pady=20)
 
         def load():
-            data = None
             try:
-                payload = json.dumps({"device_id": DEVICE_ID}).encode()
-                req = _ur.Request(f"{AUTH_SERVER}/auth/my_codes", data=payload,
+                payload = json.dumps({"token": self._auth.get("token", ""),
+                                      "device_id": DEVICE_ID}).encode()
+                req = _ur.Request(f"{AUTH_SERVER}/auth/my_access", data=payload,
                                   headers={"Content-Type": "application/json",
                                            "User-Agent": "FlagRaceLauncher/1.0"})
                 data = json.loads(_ur.urlopen(req, timeout=10).read())
             except Exception as e:
                 data = {"ok": False, "error": str(e)}
             self.after(0, lambda: render(data))
+
+        def section(title):
+            ctk.CTkLabel(body, text=title, font=ctk.CTkFont(size=12, weight="bold"),
+                         text_color=COLORS["accent"]).pack(anchor="w", padx=4, pady=(10, 2))
+
+        def item(title, sub, col):
+            card = ctk.CTkFrame(body, fg_color=COLORS["card"], corner_radius=10)
+            card.pack(fill="x", pady=4)
+            ctk.CTkLabel(card, text=title, font=ctk.CTkFont(size=13, weight="bold"),
+                         text_color="#e8e8f8").pack(anchor="w", padx=12, pady=(8, 0))
+            ctk.CTkLabel(card, text=sub, font=ctk.CTkFont(size=11),
+                         text_color=col).pack(anchor="w", padx=12, pady=(0, 8))
 
         def render(data):
             try: status.destroy()
@@ -748,37 +760,53 @@ class LauncherApp(ctk.CTk):
                 ctk.CTkLabel(body, text="Не удалось загрузить доступы",
                              text_color=COLORS["orange"]).pack(pady=20)
                 return
-            codes = data.get("codes", [])
-            if not codes:
-                ctk.CTkLabel(body, text="Активных кодов на этом железе нет",
-                             text_color=COLORS["gray"]).pack(pady=20)
-                return
-            now = time.time()
-            game_names = {g['id']: g['name'] for g in (self._catalog or [])}
-            for c in codes:
-                exp = c.get("expires_at")
-                gid = c.get("game_id")
-                game = game_names.get(gid, gid) if gid else "Все игры"
-                if exp:
-                    left = (exp - now) / 86400
-                    if left > 0:
-                        when = datetime.fromtimestamp(exp).strftime("%d.%m.%Y %H:%M")
-                        sub, col = f"до {when}  (≈{left:.1f} дн.)", COLORS["green"]
-                    else:
-                        sub, col = "истёк", COLORS["gray"]
-                else:
-                    sub, col = "бессрочный", COLORS["green"]
 
-                card = ctk.CTkFrame(body, fg_color=COLORS["card"], corner_radius=10)
-                card.pack(fill="x", pady=5)
-                ctk.CTkLabel(card, text=f"🎮 {game}",
-                             font=ctk.CTkFont(size=13, weight="bold"),
-                             text_color="#e8e8f8").pack(anchor="w", padx=12, pady=(8, 0))
-                ctk.CTkLabel(card, text=c.get("code", ""),
-                             font=ctk.CTkFont(size=11),
-                             text_color=COLORS["gray"]).pack(anchor="w", padx=12)
-                ctk.CTkLabel(card, text=sub, font=ctk.CTkFont(size=11),
-                             text_color=col).pack(anchor="w", padx=12, pady=(0, 8))
+            now = time.time()
+            names = {g['id']: g['name'] for g in (self._catalog or [])}
+            gname = lambda gid: (names.get(gid, gid) if gid else "Все игры")
+            tier_ru = {"basic": "Basic", "pro": "Pro", "buyer": "Покупатель",
+                       "guest": "Гость"}
+            shown = False
+
+            # 1) Подписка Patreon
+            acc = data.get("account")
+            if acc and acc.get("tier") in ("basic", "pro"):
+                shown = True
+                section("Подписка Patreon")
+                st = "активна" if acc.get("active") else "неактивна"
+                col = COLORS["green"] if acc.get("active") else COLORS["gray"]
+                item(f"❤ {tier_ru.get(acc['tier'], acc['tier'])}", f"Подписка {st}", col)
+
+            # 2) Покупки (бессрочно) — лицензии не от кодов
+            purchases = [l for l in data.get("licenses", [])
+                         if not str(l.get("post_id", "")).startswith("code:")]
+            if purchases:
+                shown = True
+                section("Покупки (бессрочно)")
+                for l in purchases:
+                    item(f"🎮 {gname(l.get('game_id'))}", "Доступ навсегда", COLORS["green"])
+
+            # 3) Коды (по железу)
+            codes = data.get("codes", [])
+            if codes:
+                shown = True
+                section("Коды на этом компьютере")
+                for c in codes:
+                    exp = c.get("expires_at")
+                    if exp:
+                        left = (exp - now) / 86400
+                        if left > 0:
+                            when = datetime.fromtimestamp(exp).strftime("%d.%m.%Y %H:%M")
+                            sub, col = f"{c.get('code','')} · до {when} (≈{left:.1f} дн.)", COLORS["green"]
+                        else:
+                            sub, col = f"{c.get('code','')} · истёк", COLORS["gray"]
+                    else:
+                        sub, col = f"{c.get('code','')} · бессрочный", COLORS["green"]
+                    item(f"🎟 {gname(c.get('game_id'))}", sub, col)
+
+            if not shown:
+                ctk.CTkLabel(body, text="Активных доступов нет",
+                             text_color=COLORS["gray"]).pack(pady=20)
 
         threading.Thread(target=load, daemon=True).start()
 
