@@ -1,8 +1,30 @@
 import customtkinter as ctk
-import json, os, sys, threading, zipfile, subprocess, webbrowser, uuid, time
+import json, os, sys, threading, zipfile, subprocess, webbrowser, uuid, time, ssl
 from datetime import datetime
 import urllib.request as _ur
 import urllib.parse
+
+# ── SSL: доверяем и certifi, и системному хранилищу Windows ──
+# (фикс ошибки "certificate verify failed" на старых системах и при антивирусном
+#  перехвате HTTPS). Проверку сертификата НЕ отключаем.
+def _make_ssl_ctx():
+    cafile = None
+    try:
+        import certifi
+        cafile = certifi.where()
+    except Exception:
+        pass
+    try:
+        ctx = ssl.create_default_context(cafile=cafile) if cafile else ssl.create_default_context()
+    except Exception:
+        ctx = ssl.create_default_context()
+    try:
+        ctx.load_default_certs(ssl.Purpose.SERVER_AUTH)  # + корни Windows (вкл. антивирусные)
+    except Exception:
+        pass
+    return ctx
+
+SSL_CTX = _make_ssl_ctx()
 from pathlib import Path
 from tkinter import filedialog
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -16,7 +38,7 @@ except Exception:
     pass
 
 # ── Версия и URLs ────────────────────────────────────────
-LAUNCHER_VERSION = "1.0.12"
+LAUNCHER_VERSION = "1.0.13"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
@@ -170,7 +192,7 @@ def verify_token(token):
         req = _ur.Request(f"{AUTH_SERVER}/auth/verify",
                           data=payload,
                           headers={"Content-Type":"application/json","User-Agent":"FlagRaceLauncher/1.0"})
-        r = _ur.urlopen(req, timeout=10)
+        r = _ur.urlopen(req, timeout=10, context=SSL_CTX)
         return json.loads(r.read())
     except Exception as e:
         return {"ok": False, "error": str(e)}
@@ -189,7 +211,7 @@ def save_state(state):
 
 def fetch_json(url):
     try:
-        r = _ur.urlopen(url, timeout=6)
+        r = _ur.urlopen(url, timeout=6, context=SSL_CTX)
         return json.loads(r.read().decode())
     except: return None
 
@@ -559,7 +581,7 @@ class LauncherApp(ctk.CTk):
 
             status("Скачивание обновления...")
             req = _ur.Request(url, headers={"User-Agent": "Launcher"})
-            with _ur.urlopen(req, timeout=300) as r, open(zip_path, "wb") as f:
+            with _ur.urlopen(req, timeout=300, context=SSL_CTX) as r, open(zip_path, "wb") as f:
                 shutil.copyfileobj(r, f)
 
             status("Распаковка...")
@@ -736,7 +758,7 @@ class LauncherApp(ctk.CTk):
                 req = _ur.Request(f"{AUTH_SERVER}/auth/my_access", data=payload,
                                   headers={"Content-Type": "application/json",
                                            "User-Agent": "FlagRaceLauncher/1.0"})
-                data = json.loads(_ur.urlopen(req, timeout=10).read())
+                data = json.loads(_ur.urlopen(req, timeout=10, context=SSL_CTX).read())
             except Exception as e:
                 data = {"ok": False, "error": str(e)}
             self.after(0, lambda: render(data))
@@ -937,7 +959,7 @@ class LauncherApp(ctk.CTk):
             if card: self.after(0, lambda: card.show_progress(0, "Connecting..."))
 
             req = _ur.Request(url, headers={"User-Agent": "FlagRaceLauncher/1.0"})
-            with _ur.urlopen(req, timeout=60) as resp:
+            with _ur.urlopen(req, timeout=60, context=SSL_CTX) as resp:
                 total = int(resp.getheader("Content-Length") or 0)
                 done  = 0
                 chunk = 65536
@@ -1258,7 +1280,7 @@ class LauncherApp(ctk.CTk):
                          "User-Agent": "FlagRaceLauncher/1.0"}
             )
             try:
-                r = _ur.urlopen(req, timeout=15)
+                r = _ur.urlopen(req, timeout=15, context=SSL_CTX)
                 result = json.loads(r.read())
             except Exception as e:
                 # HTTPError (4xx/5xx) тоже содержит тело с деталями ошибки

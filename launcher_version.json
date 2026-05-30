@@ -1,6 +1,6 @@
 {
-  "version": "1.0.12",
+  "version": "1.0.13",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.zip",
-  "changelog": "«Мои доступы» теперь показывают подписку Patreon, бессрочные покупки и коды."
+  "changelog": "Исправлена ошибка проверки сертификата при скачивании игр (поддержка системных и антивирусных сертификатов)."
 }
