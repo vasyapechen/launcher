@@ -1,6 +1,6 @@
 {
-  "version": "1.0.7",
+  "version": "1.0.8",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.exe",
-  "changelog": "Состояние игр больше не теряется после обновления. Исправлена ошибка запуска после автообновления."
+  "changelog": "Тестовая версия для финальной проверки автообновления."
 }
