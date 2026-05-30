@@ -48,7 +48,12 @@ def _migrate_from_basedir(*names):
 _migrate_from_basedir("games_state.json", "catalog_cache.json",
                       "launcher_config.json", "auth_token.json", "device_id.txt")
 
-DEFAULT_GAMES_DIR = Path("C:/games")
+DEFAULT_GAMES_DIR = Path("C:/Games")
+
+def game_folder(game):
+    """Имя папки игры на диске — по названию, с большой буквы, без пробелов."""
+    name = (game.get('name') or game.get('id') or 'Game').strip()
+    return name.replace(' ', '') or game.get('id', 'Game')
 
 def load_config():
     try:
@@ -611,8 +616,28 @@ class LauncherApp(ctk.CTk):
                 return
         self.after(0, self._render)
 
+    # ── Автоопределение уже скачанных игр ────────────────
+    def _reconcile_disk(self):
+        """Если игра скачана (папка с .exe есть), но в состоянии её нет —
+        восстанавливаем запись, чтобы лаунчер видел её установленной."""
+        changed = False
+        for game in (self._catalog or []):
+            gid = game['id']
+            if self._state.get(gid, {}).get('version'):
+                continue
+            gdir = GAMES_DIR / game_folder(game)
+            if gdir.exists():
+                exes = sorted(gdir.rglob("*.exe"), key=lambda p: len(p.parts))
+                if exes:
+                    self._state[gid] = {'version': game['version'],
+                                        'exe': str(exes[0])}
+                    changed = True
+        if changed:
+            save_state(self._state)
+
     # ── Рендер карточек ──────────────────────────────────
     def _render(self):
+        self._reconcile_disk()
         for w in self.scroll.winfo_children():
             w.destroy()
         self._cards.clear()
@@ -703,7 +728,7 @@ class LauncherApp(ctk.CTk):
     def _delete(self, game):
         import shutil
         gid = game['id']
-        game_dir = GAMES_DIR / gid
+        game_dir = GAMES_DIR / game_folder(game)
         try:
             if game_dir.exists():
                 shutil.rmtree(game_dir)
@@ -764,7 +789,7 @@ class LauncherApp(ctk.CTk):
             self._set_status(f"Закройте {game['name']} перед обновлением")
             return
 
-        game_dir = GAMES_DIR / gid
+        game_dir = GAMES_DIR / game_folder(game)
         game_dir.mkdir(parents=True, exist_ok=True)
         zip_path  = game_dir / f"{gid}.zip"
         part_path = game_dir / f"{gid}.zip.part"   # качаем во временный файл
