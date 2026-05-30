@@ -38,7 +38,7 @@ except Exception:
     pass
 
 # ── Версия и URLs ────────────────────────────────────────
-LAUNCHER_VERSION = "1.0.13"
+LAUNCHER_VERSION = "1.0.14"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
@@ -117,6 +117,99 @@ _config   = load_config()
 GAMES_DIR = Path(_config.get("games_dir", str(DEFAULT_GAMES_DIR)))
 ensure_dir_case(GAMES_DIR)               # привести "games" -> "Games", если уже есть
 GAMES_DIR.mkdir(parents=True, exist_ok=True)
+
+# ── Локализация (RU/EN) ──────────────────────────────────
+LANG = {
+  "ru": {
+    "my_access":"🎟 Мои доступы","games_folder":"Папка игр",
+    "folder_changed":"Папка изменена","checking_auth":"Проверка входа...",
+    "sign_in_to_play":"Войдите, чтобы играть","welcome":"Добро пожаловать, {name}!",
+    "loading_catalog":"Загрузка каталога...","games_count":"{n} игр",
+    "offline_cache":"Офлайн (кэш)","load_error":"Ошибка загрузки","no_connection":"Нет соединения",
+    "file_not_found":"Файл не найден — переустановите игру","url_missing":"URL не указан в каталоге",
+    "uninstalled":"{name} удалена","uninstall_error":"Ошибка удаления: {e}",
+    "launched":"Запущено: {name}","close_before_update":"Закройте {name} перед обновлением",
+    "installed_ok":"{name} установлена ✓","updated_ok":"{name} обновлена ✓","download_error":"Ошибка загрузки: {e}",
+    "card_installed":"✓ установлена","card_play":"▶   Играть","card_update_tag":"обновление",
+    "card_update":"🔄   Обновить","card_download":"⬇   Скачать","card_uninstall":"🗑  Удалить",
+    "card_downloading":"Скачивание...","no_games":"Игр не найдено",
+    "upd_available":"🔄  Доступно обновление","upd_new_version":"Новая версия v{v}",
+    "upd_later":"Позже","upd_now":"Обновить сейчас","upd_no_link":"Нет ссылки на обновление",
+    "upd_only_exe":"Автообновление работает только в собранном .exe","upd_downloading":"Скачивание обновления...",
+    "upd_extracting":"Распаковка...","upd_restarting":"Перезапуск...",
+    "upd_restarting_admin":"Перезапуск (подтвердите права администратора)...","upd_error":"Ошибка: {e}",
+    "ma_title":"🎟  Мои доступы","ma_subtitle":"Подписка, покупки и коды на этом компьютере",
+    "ma_loading":"Загрузка...","ma_fail":"Не удалось загрузить доступы","ma_none":"Активных доступов нет",
+    "ma_sec_sub":"Подписка Patreon","ma_sec_buy":"Покупки (бессрочно)","ma_sec_codes":"Коды на этом компьютере",
+    "ma_sub_active":"Подписка активна","ma_sub_inactive":"Подписка неактивна","ma_forever":"Доступ навсегда",
+    "ma_all_games":"Все игры","ma_until":"{code} · до {when} (≈{days} дн.)",
+    "ma_expired":"{code} · истёк","ma_permanent":"{code} · бессрочный",
+    "tier_basic":"Basic","tier_pro":"Pro","tier_buyer":"Покупатель","tier_guest":"Гость",
+    "del_title":"🗑  Удалить {name}?","del_body":"Файлы игры будут удалены.\nЕё можно будет скачать снова.",
+    "del_cancel":"Отмена","del_confirm":"🗑  Удалить",
+    "login_window":"Вход","login_sub":"Нужна подписка Patreon","login_signin":"🔑  Войти через Patreon",
+    "login_no_sub":"Ещё нет подписки?","login_subscribe":"❤  Оформить на Patreon","or":"  или  ",
+    "enter_code":"🎟  Ввести код доступа","already_bought":"Уже купили {name} на Patreon?",
+    "activate_game":"🔑  Активировать {name}","login_opening":"Открываю браузер...",
+    "login_waiting":"Ожидание входа в браузере...","login_not_done":"❌ Вход не завершён. Попробуйте снова.",
+    "code_enter_one":"❌ Введите код","code_verifying":"Проверка кода...","conn_error":"❌ Ошибка соединения",
+    "code_invalid":"❌ Неверный код","code_expired_msg":"❌ Код истёк","code_limit":"❌ Достигнут лимит использований кода",
+    "act_window":"Активация игры","act_no_access":"У вас нет доступа к этой игре.",
+    "act_buy":"❤  Купить на Patreon","act_activate":"🔑  Активировать (уже куплено)",
+    "act_opening":"Открываю браузер...","act_waiting":"Ожидание браузера...","act_not_done":"❌ Не завершено. Попробуйте снова.",
+  },
+  "en": {
+    "my_access":"🎟 My access","games_folder":"Games folder",
+    "folder_changed":"Folder changed","checking_auth":"Checking auth...",
+    "sign_in_to_play":"Sign in to play","welcome":"Welcome, {name}!",
+    "loading_catalog":"Loading catalog...","games_count":"{n} games",
+    "offline_cache":"Offline (cache)","load_error":"Load error","no_connection":"No connection",
+    "file_not_found":"File not found — reinstall the game","url_missing":"URL not specified in catalog",
+    "uninstalled":"{name} uninstalled","uninstall_error":"Uninstall error: {e}",
+    "launched":"Launched: {name}","close_before_update":"Close {name} before updating",
+    "installed_ok":"{name} installed ✓","updated_ok":"{name} updated ✓","download_error":"Download error: {e}",
+    "card_installed":"✓ installed","card_play":"▶   Play","card_update_tag":"update",
+    "card_update":"🔄   Update","card_download":"⬇   Download","card_uninstall":"🗑  Uninstall",
+    "card_downloading":"Downloading...","no_games":"No games found",
+    "upd_available":"🔄  Update available","upd_new_version":"New version v{v}",
+    "upd_later":"Later","upd_now":"Update now","upd_no_link":"No update link",
+    "upd_only_exe":"Auto-update works only in the built .exe","upd_downloading":"Downloading update...",
+    "upd_extracting":"Extracting...","upd_restarting":"Restarting...",
+    "upd_restarting_admin":"Restarting (confirm administrator rights)...","upd_error":"Error: {e}",
+    "ma_title":"🎟  My access","ma_subtitle":"Subscription, purchases and codes on this computer",
+    "ma_loading":"Loading...","ma_fail":"Failed to load access","ma_none":"No active access",
+    "ma_sec_sub":"Patreon subscription","ma_sec_buy":"Purchases (permanent)","ma_sec_codes":"Codes on this computer",
+    "ma_sub_active":"Subscription active","ma_sub_inactive":"Subscription inactive","ma_forever":"Permanent access",
+    "ma_all_games":"All games","ma_until":"{code} · until {when} (≈{days} d.)",
+    "ma_expired":"{code} · expired","ma_permanent":"{code} · permanent",
+    "tier_basic":"Basic","tier_pro":"Pro","tier_buyer":"Buyer","tier_guest":"Guest",
+    "del_title":"🗑  Delete {name}?","del_body":"Game files will be deleted.\nYou can download it again.",
+    "del_cancel":"Cancel","del_confirm":"🗑  Delete",
+    "login_window":"Sign in","login_sub":"Patreon subscription required","login_signin":"🔑  Sign in with Patreon",
+    "login_no_sub":"No subscription yet?","login_subscribe":"❤  Subscribe on Patreon","or":"  or  ",
+    "enter_code":"🎟  Enter access code","already_bought":"Already bought {name} on Patreon?",
+    "activate_game":"🔑  Activate {name}","login_opening":"Opening browser...",
+    "login_waiting":"Waiting for browser sign-in...","login_not_done":"❌ Sign-in not completed. Try again.",
+    "code_enter_one":"❌ Enter a code","code_verifying":"Verifying code...","conn_error":"❌ Connection error",
+    "code_invalid":"❌ Invalid code","code_expired_msg":"❌ Code has expired","code_limit":"❌ Code usage limit reached",
+    "act_window":"Activate game","act_no_access":"You don't have access to this game.",
+    "act_buy":"❤  Buy on Patreon","act_activate":"🔑  Activate (already bought)",
+    "act_opening":"Opening browser...","act_waiting":"Waiting for browser...","act_not_done":"❌ Not completed. Try again.",
+  },
+}
+_lang = _config.get("lang", "ru")
+if _lang not in LANG: _lang = "ru"
+
+def tr(key, **kw):
+    s = LANG.get(_lang, LANG["ru"]).get(key, LANG["ru"].get(key, key))
+    try: return s.format(**kw) if kw else s
+    except Exception: return s
+
+def set_app_lang(l):
+    global _lang
+    _lang = l if l in LANG else "ru"
+    _config["lang"] = _lang
+    save_config(_config)
 
 # ── Auth ──────────────────────────────────────────────────
 TOKEN_FILE = DATA_DIR / "auth_token.json"
@@ -276,15 +369,15 @@ class GameCard(ctk.CTkFrame):
 
         # Статус
         if inst_ver == new_ver:
-            s_text, s_col = f"v{inst_ver}  ✓ installed", COLORS["green"]
-            btn_text, btn_col = "▶   Play", COLORS["btn_play"]
+            s_text, s_col = f"v{inst_ver}  {tr('card_installed')}", COLORS["green"]
+            btn_text, btn_col = tr('card_play'), COLORS["btn_play"]
         elif inst_ver:
-            s_text, s_col = f"v{inst_ver} → v{new_ver}  update", COLORS["orange"]
-            btn_text, btn_col = "🔄   Update", COLORS["btn_upd"]
+            s_text, s_col = f"v{inst_ver} → v{new_ver}  {tr('card_update_tag')}", COLORS["orange"]
+            btn_text, btn_col = tr('card_update'), COLORS["btn_upd"]
         else:
             size = self.game.get('size_mb', '?')
             s_text, s_col = f"v{new_ver}  •  {size} MB", COLORS["gray"]
-            btn_text, btn_col = "⬇   Download", COLORS["btn_dl"]
+            btn_text, btn_col = tr('card_download'), COLORS["btn_dl"]
 
         ctk.CTkLabel(self, text=s_text,
                      font=ctk.CTkFont(size=11),
@@ -319,7 +412,7 @@ class GameCard(ctk.CTkFrame):
         # Кнопка удаления (только если установлена)
         if inst_ver:
             self.del_btn = ctk.CTkButton(
-                self, text="🗑  Uninstall", width=170, height=26,
+                self, text=tr('card_uninstall'), width=170, height=26,
                 fg_color="transparent", hover_color="#3a1a1a",
                 border_width=1, border_color="#552222",
                 corner_radius=8, font=ctk.CTkFont(size=11),
@@ -336,7 +429,7 @@ class GameCard(ctk.CTkFrame):
         self.prog_lbl.configure(text=text)
         self.prog_lbl.pack()
         self.progress.set(value)
-        self.btn.configure(state="disabled", text="Downloading...")
+        self.btn.configure(state="disabled", text=tr('card_downloading'))
 
     def done_progress(self):
         self._prog_frame.pack_forget()
@@ -390,13 +483,13 @@ class LauncherApp(ctk.CTk):
                      font=ctk.CTkFont(size=22, weight="bold"),
                      text_color=COLORS["accent"]).pack(side="left", padx=20)
 
-        self.refresh_btn = ctk.CTkButton(
-            hdr, text="🔄", width=38, height=32,
+        self.lang_btn = ctk.CTkButton(
+            hdr, text=f"🌐 {'EN' if _lang=='ru' else 'RU'}", width=58, height=32,
             fg_color="transparent", hover_color="#222244",
-            command=lambda: threading.Thread(
-                target=self._load_catalog, daemon=True).start()
+            corner_radius=8, font=ctk.CTkFont(size=12),
+            command=self._toggle_lang
         )
-        self.refresh_btn.pack(side="right", padx=4)
+        self.lang_btn.pack(side="right", padx=4)
 
         ctk.CTkButton(
             hdr, text="❤  Patreon", width=100, height=32,
@@ -407,7 +500,7 @@ class LauncherApp(ctk.CTk):
         ).pack(side="right", padx=(8, 4))
 
         self.mycodes_btn = ctk.CTkButton(
-            hdr, text="🎟 Мои доступы", width=130, height=32,
+            hdr, text=tr('my_access'), width=130, height=32,
             fg_color="#2a2a44", hover_color="#3a3a5a",
             corner_radius=8, font=ctk.CTkFont(size=12),
             command=self._show_my_codes
@@ -451,7 +544,7 @@ class LauncherApp(ctk.CTk):
     def _choose_games_dir(self):
         global GAMES_DIR
         chosen = filedialog.askdirectory(
-            title="Games folder",
+            title=tr('games_folder'),
             initialdir=str(GAMES_DIR)
         )
         if not chosen:
@@ -461,7 +554,7 @@ class LauncherApp(ctk.CTk):
         _config["games_dir"] = str(GAMES_DIR)
         save_config(_config)
         self.dir_lbl.configure(text=str(GAMES_DIR))
-        self._set_status("Folder changed")
+        self._status('folder_changed')
 
     # ── Запуск ───────────────────────────────────────────
     def _has_game_access(self, game):
@@ -478,7 +571,7 @@ class LauncherApp(ctk.CTk):
 
     def _startup(self):
         self._check_launcher_update()   # проверяем обновление лаунчера всегда при запуске
-        self._set_status("Checking auth...")
+        self._status('checking_auth')
         token = self._auth.get("token")
         last_verify = self._auth.get("last_verify", 0)
         need_verify = (time.time() - last_verify) > 3600   # раз в час
@@ -503,13 +596,13 @@ class LauncherApp(ctk.CTk):
                 self._auth = {}
 
         # Нет токена — загружаем каталог, но без возможности играть
-        self._set_status("Sign in to play")
+        self._status('sign_in_to_play')
         self._load_catalog()
 
     def _after_login(self):
         self._logged_in = True
         name = self._auth.get("name", "")
-        self._set_status(f"Welcome, {name}!" if name else "")
+        self._status('welcome', name=name) if name else self._status(None)
         self._load_catalog()
 
     def _check_launcher_update(self):
@@ -528,10 +621,10 @@ class LauncherApp(ctk.CTk):
         win.protocol("WM_DELETE_WINDOW", win.destroy)
         self._bring_to_front(win)
 
-        ctk.CTkLabel(win, text="🔄  Доступно обновление",
+        ctk.CTkLabel(win, text=tr('upd_available'),
                      font=ctk.CTkFont(size=18, weight="bold"),
                      text_color=COLORS["accent"]).pack(pady=(24, 4))
-        ctk.CTkLabel(win, text=f"Новая версия v{data.get('version','')}",
+        ctk.CTkLabel(win, text=tr('upd_new_version', v=data.get('version','')),
                      font=ctk.CTkFont(size=13),
                      text_color=COLORS["gray"]).pack()
         cl = data.get('changelog', '')
@@ -545,10 +638,10 @@ class LauncherApp(ctk.CTk):
 
         btns = ctk.CTkFrame(win, fg_color="transparent")
         btns.pack(pady=(16, 0))
-        ctk.CTkButton(btns, text="Позже", width=110, height=36,
+        ctk.CTkButton(btns, text=tr('upd_later'), width=110, height=36,
                       fg_color="#33334d", hover_color="#44445d",
                       command=win.destroy).grid(row=0, column=0, padx=6)
-        ctk.CTkButton(btns, text="Обновить сейчас", width=160, height=36,
+        ctk.CTkButton(btns, text=tr('upd_now'), width=160, height=36,
                       fg_color=COLORS["btn_play"],
                       hover_color=_brighten(COLORS["btn_play"]),
                       font=ctk.CTkFont(weight="bold"),
@@ -566,9 +659,9 @@ class LauncherApp(ctk.CTk):
 
         url = data.get('download_url', '')
         if not url:
-            status("Нет ссылки на обновление"); return
+            status(tr('upd_no_link')); return
         if not getattr(sys, 'frozen', False):
-            status("Автообновление работает только в собранном .exe"); return
+            status(tr('upd_only_exe')); return
 
         try:
             install_dir = Path(sys.executable).parent   # папка с Launcher.exe и _internal
@@ -579,12 +672,12 @@ class LauncherApp(ctk.CTk):
             work.mkdir(parents=True, exist_ok=True)
             zip_path = work / "launcher.zip"
 
-            status("Скачивание обновления...")
+            status(tr('upd_downloading'))
             req = _ur.Request(url, headers={"User-Agent": "Launcher"})
             with _ur.urlopen(req, timeout=300, context=SSL_CTX) as r, open(zip_path, "wb") as f:
                 shutil.copyfileobj(r, f)
 
-            status("Распаковка...")
+            status(tr('upd_extracting'))
             extract_dir = work / "files"
             with zipfile.ZipFile(zip_path, 'r') as z:
                 if z.testzip() is not None:
@@ -627,7 +720,7 @@ class LauncherApp(ctk.CTk):
                     return False
 
             if _writable(install_dir):
-                status("Перезапуск...")
+                status(tr('upd_restarting'))
                 subprocess.Popen(
                     ["cmd", "/c", str(bat)],
                     cwd=str(DATA_DIR),
@@ -635,7 +728,7 @@ class LauncherApp(ctk.CTk):
                 )
             else:
                 # Папка защищена (например Program Files) — нужны права администратора
-                status("Перезапуск (подтвердите права администратора)...")
+                status(tr('upd_restarting_admin'))
                 ps_cmd = (
                     "Start-Process -FilePath 'cmd.exe' "
                     f"-ArgumentList '/c','\"{bat}\"' -Verb RunAs -WindowStyle Hidden"
@@ -647,28 +740,28 @@ class LauncherApp(ctk.CTk):
                 )
             self.after(800, self.destroy)
         except Exception as e:
-            status(f"Ошибка: {e}")
+            status(tr('upd_error', e=e))
 
     # ── Каталог ──────────────────────────────────────────
     def _load_catalog(self):
-        self._set_status("Loading catalog...")
+        self._status('loading_catalog')
         data = fetch_json(CATALOG_URL)
         if data and 'games' in data:
             self._catalog = data['games']
             try: CACHE_FILE.write_text(
                     json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
             except: pass
-            self._set_status(f"{len(self._catalog)} games")
+            self._status('games_count', n=len(self._catalog))
         else:
             # Offline — use cache
             if CACHE_FILE.exists():
                 try:
                     self._catalog = json.loads(
                         CACHE_FILE.read_text(encoding='utf-8')).get('games', [])
-                    self._set_status("Offline (cache)")
-                except: self._set_status("Load error")
+                    self._status('offline_cache')
+                except: self._status('load_error')
             else:
-                self._set_status("No connection")
+                self._status('no_connection')
                 return
         self.after(0, self._render)
 
@@ -700,7 +793,7 @@ class LauncherApp(ctk.CTk):
         self._cards.clear()
 
         if not self._catalog:
-            ctk.CTkLabel(self.scroll, text="No games found",
+            ctk.CTkLabel(self.scroll, text=tr('no_games'),
                          font=ctk.CTkFont(size=16),
                          text_color=COLORS["gray"]).pack(pady=60)
             return
@@ -731,22 +824,22 @@ class LauncherApp(ctk.CTk):
     # ── Мои доступы: подписка, покупки и коды ────────────
     def _show_my_codes(self):
         win = ctk.CTkToplevel(self)
-        win.title("Мои доступы")
+        win.title(tr('my_access'))
         win.geometry("470x480")
         win.configure(fg_color=COLORS["bg"])
         win.protocol("WM_DELETE_WINDOW", win.destroy)
         self._bring_to_front(win)
 
-        ctk.CTkLabel(win, text="🎟  Мои доступы",
+        ctk.CTkLabel(win, text=tr('ma_title'),
                      font=ctk.CTkFont(size=18, weight="bold"),
                      text_color=COLORS["accent"]).pack(pady=(18, 2))
-        ctk.CTkLabel(win, text="Подписка, покупки и коды на этом компьютере",
+        ctk.CTkLabel(win, text=tr('ma_subtitle'),
                      font=ctk.CTkFont(size=11),
                      text_color=COLORS["gray"]).pack()
 
         body = ctk.CTkScrollableFrame(win, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=14, pady=12)
-        status = ctk.CTkLabel(body, text="Загрузка...",
+        status = ctk.CTkLabel(body, text=tr('ma_loading'),
                               font=ctk.CTkFont(size=12),
                               text_color=COLORS["gray"])
         status.pack(pady=20)
@@ -779,55 +872,56 @@ class LauncherApp(ctk.CTk):
             try: status.destroy()
             except Exception: pass
             if not data or not data.get("ok"):
-                ctk.CTkLabel(body, text="Не удалось загрузить доступы",
+                ctk.CTkLabel(body, text=tr('ma_fail'),
                              text_color=COLORS["orange"]).pack(pady=20)
                 return
 
             now = time.time()
             names = {g['id']: g['name'] for g in (self._catalog or [])}
-            gname = lambda gid: (names.get(gid, gid) if gid else "Все игры")
-            tier_ru = {"basic": "Basic", "pro": "Pro", "buyer": "Покупатель",
-                       "guest": "Гость"}
+            gname = lambda gid: (names.get(gid, gid) if gid else tr('ma_all_games'))
+            tier_names = {"basic": tr('tier_basic'), "pro": tr('tier_pro'),
+                          "buyer": tr('tier_buyer'), "guest": tr('tier_guest')}
             shown = False
 
             # 1) Подписка Patreon
             acc = data.get("account")
             if acc and acc.get("tier") in ("basic", "pro"):
                 shown = True
-                section("Подписка Patreon")
-                st = "активна" if acc.get("active") else "неактивна"
+                section(tr('ma_sec_sub'))
                 col = COLORS["green"] if acc.get("active") else COLORS["gray"]
-                item(f"❤ {tier_ru.get(acc['tier'], acc['tier'])}", f"Подписка {st}", col)
+                st  = tr('ma_sub_active') if acc.get("active") else tr('ma_sub_inactive')
+                item(f"❤ {tier_names.get(acc['tier'], acc['tier'])}", st, col)
 
             # 2) Покупки (бессрочно) — лицензии не от кодов
             purchases = [l for l in data.get("licenses", [])
                          if not str(l.get("post_id", "")).startswith("code:")]
             if purchases:
                 shown = True
-                section("Покупки (бессрочно)")
+                section(tr('ma_sec_buy'))
                 for l in purchases:
-                    item(f"🎮 {gname(l.get('game_id'))}", "Доступ навсегда", COLORS["green"])
+                    item(f"🎮 {gname(l.get('game_id'))}", tr('ma_forever'), COLORS["green"])
 
             # 3) Коды (по железу)
             codes = data.get("codes", [])
             if codes:
                 shown = True
-                section("Коды на этом компьютере")
+                section(tr('ma_sec_codes'))
                 for c in codes:
                     exp = c.get("expires_at")
+                    code = c.get('code','')
                     if exp:
                         left = (exp - now) / 86400
                         if left > 0:
                             when = datetime.fromtimestamp(exp).strftime("%d.%m.%Y %H:%M")
-                            sub, col = f"{c.get('code','')} · до {when} (≈{left:.1f} дн.)", COLORS["green"]
+                            sub, col = tr('ma_until', code=code, when=when, days=f"{left:.1f}"), COLORS["green"]
                         else:
-                            sub, col = f"{c.get('code','')} · истёк", COLORS["gray"]
+                            sub, col = tr('ma_expired', code=code), COLORS["gray"]
                     else:
-                        sub, col = f"{c.get('code','')} · бессрочный", COLORS["green"]
+                        sub, col = tr('ma_permanent', code=code), COLORS["green"]
                     item(f"🎟 {gname(c.get('game_id'))}", sub, col)
 
             if not shown:
-                ctk.CTkLabel(body, text="Активных доступов нет",
+                ctk.CTkLabel(body, text=tr('ma_none'),
                              text_color=COLORS["gray"]).pack(pady=20)
 
         threading.Thread(target=load, daemon=True).start()
@@ -835,30 +929,30 @@ class LauncherApp(ctk.CTk):
     def _confirm_delete(self, game):
         """Окно подтверждения удаления игры."""
         win = ctk.CTkToplevel(self)
-        win.title("Удаление")
+        win.title("")
         win.geometry("360x190")
         win.resizable(False, False)
         win.configure(fg_color=COLORS["bg"])
         win.protocol("WM_DELETE_WINDOW", win.destroy)
         self._bring_to_front(win)
 
-        ctk.CTkLabel(win, text=f"🗑  Удалить {game['name']}?",
+        ctk.CTkLabel(win, text=tr('del_title', name=game['name']),
                      font=ctk.CTkFont(size=17, weight="bold"),
                      text_color=COLORS["accent"]).pack(pady=(26, 6))
-        ctk.CTkLabel(win, text="Файлы игры будут удалены.\nЕё можно будет скачать снова.",
+        ctk.CTkLabel(win, text=tr('del_body'),
                      font=ctk.CTkFont(size=12),
                      text_color=COLORS["gray"]).pack()
 
         btn_row = ctk.CTkFrame(win, fg_color="transparent")
         btn_row.pack(pady=(20, 0))
         ctk.CTkButton(
-            btn_row, text="Отмена", width=120, height=36,
+            btn_row, text=tr('del_cancel'), width=120, height=36,
             fg_color="#2a2a44", hover_color="#3a3a5a",
             corner_radius=10, font=ctk.CTkFont(size=13),
             command=win.destroy
         ).pack(side="left", padx=(0, 10))
         ctk.CTkButton(
-            btn_row, text="🗑  Удалить", width=120, height=36,
+            btn_row, text=tr('del_confirm'), width=120, height=36,
             fg_color="#8a2a2a", hover_color="#aa3a3a",
             corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
             text_color="white",
@@ -894,11 +988,11 @@ class LauncherApp(ctk.CTk):
             if game_dir.exists():
                 shutil.rmtree(game_dir)
         except Exception as e:
-            self._set_status(f"Uninstall error: {e}")
+            self._status('uninstall_error', e=e)
             return
         self._state.pop(gid, None)
         save_state(self._state)
-        self._set_status(f"{game['name']} uninstalled")
+        self._status('uninstalled', name=game['name'])
         self.after(0, self._render)
 
     # ── Запуск игры ──────────────────────────────────────
@@ -908,9 +1002,9 @@ class LauncherApp(ctk.CTk):
             token = self._auth.get("token", "")
             cmd = [exe, "--token", token, "--device", DEVICE_ID] if token else [exe]
             subprocess.Popen(cmd, cwd=os.path.dirname(exe))
-            self._set_status(f"Launched: {game['name']}")
+            self._status('launched', name=game['name'])
         else:
-            self._set_status("File not found — reinstall the game")
+            self._status('file_not_found')
             # Сбросить состояние чтобы можно было скачать снова
             self._state.pop(game['id'], None)
             save_state(self._state)
@@ -939,7 +1033,7 @@ class LauncherApp(ctk.CTk):
         url  = game.get('download_url', '')
 
         if not url:
-            self._set_status("URL не указан в каталоге")
+            self._status('url_missing')
             return
 
         gid       = game['id']
@@ -947,7 +1041,7 @@ class LauncherApp(ctk.CTk):
 
         # При обновлении нельзя трогать файлы, если игра запущена
         if is_update and self._game_process_running(game):
-            self._set_status(f"Закройте {game['name']} перед обновлением")
+            self._status('close_before_update', name=game['name'])
             return
 
         game_dir = GAMES_DIR / game_folder(game)
@@ -1019,11 +1113,10 @@ class LauncherApp(ctk.CTk):
 
             if card: self.after(0, card.done_progress)
             self.after(0, self._render)
-            self._set_status(
-                f"{game['name']} {'обновлена' if is_update else 'установлена'} ✓")
+            self._status('updated_ok' if is_update else 'installed_ok', name=game['name'])
 
         except Exception as e:
-            self._set_status(f"Ошибка загрузки: {e}")
+            self._status('download_error', e=e)
             if card: self.after(0, card.done_progress)
             # Убрать незавершённые временные файлы; старая установка остаётся как была
             part_path.unlink(missing_ok=True)
@@ -1033,7 +1126,7 @@ class LauncherApp(ctk.CTk):
     def _show_login_screen(self, game=None):
         self._login_game = game   # игра, для которой открывается вход
         self._login_win = ctk.CTkToplevel(self)
-        self._login_win.title("Sign in")
+        self._login_win.title(tr('login_window'))
         h = 570 if game else 480
         self._login_win.geometry(f"460x{h}")
         self._login_win.resizable(False, False)
@@ -1045,7 +1138,7 @@ class LauncherApp(ctk.CTk):
                      font=ctk.CTkFont(size=26, weight="bold"),
                      text_color=COLORS["accent"]).pack(pady=(30, 8))
 
-        ctk.CTkLabel(self._login_win, text="Patreon subscription required",
+        ctk.CTkLabel(self._login_win, text=tr('login_sub'),
                      font=ctk.CTkFont(size=13),
                      text_color=COLORS["gray"]).pack()
 
@@ -1055,18 +1148,18 @@ class LauncherApp(ctk.CTk):
         self._login_status.pack(pady=(6, 0))
 
         ctk.CTkButton(
-            self._login_win, text="🔑  Sign in with Patreon",
+            self._login_win, text=tr('login_signin'),
             width=240, height=44,
             fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
             corner_radius=12, font=ctk.CTkFont(size=14, weight="bold"),
             command=lambda: threading.Thread(target=self._do_login, daemon=True).start()
         ).pack(pady=(16, 0))
 
-        ctk.CTkLabel(self._login_win, text="No subscription yet?",
+        ctk.CTkLabel(self._login_win, text=tr('login_no_sub'),
                      font=ctk.CTkFont(size=11), text_color="#444466").pack(pady=(10, 0))
 
         ctk.CTkButton(
-            self._login_win, text="❤  Subscribe on Patreon",
+            self._login_win, text=tr('login_subscribe'),
             width=240, height=34,
             fg_color="#FF424D", hover_color="#cc2f38",
             corner_radius=10, font=ctk.CTkFont(size=12, weight="bold"),
@@ -1079,7 +1172,7 @@ class LauncherApp(ctk.CTk):
         sep_frame.pack(pady=(18, 0), fill="x", padx=60)
         ctk.CTkFrame(sep_frame, fg_color="#2a2a44", height=1).pack(
             fill="x", side="left", expand=True, pady=9)
-        ctk.CTkLabel(sep_frame, text="  or  ", font=ctk.CTkFont(size=11),
+        ctk.CTkLabel(sep_frame, text=tr('or'), font=ctk.CTkFont(size=11),
                      text_color="#444466").pack(side="left")
         ctk.CTkFrame(sep_frame, fg_color="#2a2a44", height=1).pack(
             fill="x", side="left", expand=True, pady=9)
@@ -1091,7 +1184,7 @@ class LauncherApp(ctk.CTk):
 
         # Кнопка «Ввести код»
         self._code_toggle_btn = ctk.CTkButton(
-            self._code_section, text="🎟  Enter access code",
+            self._code_section, text=tr('enter_code'),
             width=240, height=38,
             fg_color="transparent", hover_color="#1a1a2e",
             border_width=1, border_color="#444466",
@@ -1128,20 +1221,20 @@ class LauncherApp(ctk.CTk):
             sep2.pack(pady=(14, 0), fill="x", padx=60)
             ctk.CTkFrame(sep2, fg_color="#2a2a44", height=1).pack(
                 fill="x", side="left", expand=True, pady=9)
-            ctk.CTkLabel(sep2, text="  or  ", font=ctk.CTkFont(size=11),
+            ctk.CTkLabel(sep2, text=tr('or'), font=ctk.CTkFont(size=11),
                          text_color="#444466").pack(side="left")
             ctk.CTkFrame(sep2, fg_color="#2a2a44", height=1).pack(
                 fill="x", side="left", expand=True, pady=9)
 
             ctk.CTkLabel(
                 self._login_win,
-                text=f"Already bought {game['name']} on Patreon?",
+                text=tr('already_bought', name=game['name']),
                 font=ctk.CTkFont(size=11), text_color="#444466"
             ).pack(pady=(2, 0))
 
             ctk.CTkButton(
                 self._login_win,
-                text=f"🔑  Activate {game['name']}",
+                text=tr('activate_game', name=game['name']),
                 width=240, height=38,
                 fg_color="#2a4a2a", hover_color="#3a6a3a",
                 border_width=1, border_color="#446644",
@@ -1191,7 +1284,7 @@ class LauncherApp(ctk.CTk):
             pass
 
     def _do_login(self):
-        self._set_login_status("Opening browser...")
+        self._set_login_status(tr('login_opening'))
 
         # Найти свободный порт
         import socket
@@ -1223,7 +1316,7 @@ class LauncherApp(ctk.CTk):
         params = urllib.parse.urlencode({"device_id": DEVICE_ID, "local_port": port})
         url = f"{AUTH_SERVER}/auth/start?{params}"
         webbrowser.open(url)
-        self._set_login_status("Waiting for browser sign-in...")
+        self._set_login_status(tr('login_waiting'))
 
         for _ in range(180):  # ждём до 3 минут
             srv.handle_request()
@@ -1234,7 +1327,7 @@ class LauncherApp(ctk.CTk):
 
         r = result_holder[0]
         if not r or not r.get("token"):
-            self._set_login_status("❌ Sign-in not completed. Try again.")
+            self._set_login_status(tr('login_not_done'))
             return
 
         games_str = r.get("games", "")
@@ -1265,9 +1358,9 @@ class LauncherApp(ctk.CTk):
     def _do_redeem_code(self):
         code = self._code_entry.get().strip().upper()
         if not code:
-            self._set_login_status("❌ Enter a code")
+            self._set_login_status(tr('code_enter_one'))
             return
-        self._set_login_status("Verifying code...")
+        self._set_login_status(tr('code_verifying'))
         try:
             payload = json.dumps({
                 "code": code,
@@ -1287,18 +1380,18 @@ class LauncherApp(ctk.CTk):
                 try:
                     result = json.loads(e.read())  # type: ignore
                 except Exception:
-                    self._set_login_status("❌ Connection error")
+                    self._set_login_status(tr('conn_error'))
                     return
         except Exception:
-            self._set_login_status("❌ Connection error")
+            self._set_login_status(tr('conn_error'))
             return
 
         if not result.get("ok"):
             err = result.get("error", "")
             msgs = {
-                "invalid_code":       "❌ Invalid code",
-                "code_expired":       "❌ Code has expired",
-                "code_limit_reached": "❌ Code usage limit reached",
+                "invalid_code":       tr('code_invalid'),
+                "code_expired":       tr('code_expired_msg'),
+                "code_limit_reached": tr('code_limit'),
             }
             self._set_login_status(msgs.get(err, f"❌ {err}"))
             return
@@ -1321,7 +1414,7 @@ class LauncherApp(ctk.CTk):
     def _show_activate_screen(self, game):
         """Окно для активации игры, купленной на Patreon (пользователь уже вошёл, но без доступа)."""
         win = ctk.CTkToplevel(self)
-        win.title("Activate game")
+        win.title(tr('act_window'))
         win.geometry("360x230")
         win.resizable(False, False)
         win.configure(fg_color=COLORS["bg"])
@@ -1333,7 +1426,7 @@ class LauncherApp(ctk.CTk):
                      font=ctk.CTkFont(size=20, weight="bold"),
                      text_color=COLORS["accent"]).pack(pady=(28, 4))
 
-        ctk.CTkLabel(win, text="You don't have access to this game.",
+        ctk.CTkLabel(win, text=tr('act_no_access'),
                      font=ctk.CTkFont(size=12),
                      text_color=COLORS["gray"]).pack()
 
@@ -1343,7 +1436,7 @@ class LauncherApp(ctk.CTk):
         self._activate_status.pack(pady=(4, 0))
 
         ctk.CTkButton(
-            win, text="❤  Buy on Patreon",
+            win, text=tr('act_buy'),
             width=240, height=38,
             fg_color="#FF424D", hover_color="#cc2f38",
             corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
@@ -1352,7 +1445,7 @@ class LauncherApp(ctk.CTk):
         ).pack(pady=(14, 4))
 
         ctk.CTkButton(
-            win, text="🔑  Activate (already bought)",
+            win, text=tr('act_activate'),
             width=240, height=38,
             fg_color="#2a4a2a", hover_color="#3a6a3a",
             border_width=1, border_color="#446644",
@@ -1374,7 +1467,7 @@ class LauncherApp(ctk.CTk):
                 self._activate_win.after(
                     0, lambda: self._activate_status.configure(text=msg))
 
-        _status("Opening browser...")
+        _status(tr('act_opening'))
 
         with _sock.socket() as s:
             s.bind(('', 0))
@@ -1413,7 +1506,7 @@ class LauncherApp(ctk.CTk):
             "local_port": port,
         })
         webbrowser.open(f"{AUTH_SERVER}/auth/start_game?{url_params}")
-        _status("Waiting for browser...")
+        _status(tr('act_waiting'))
 
         for _ in range(180):
             srv.handle_request()
@@ -1423,7 +1516,7 @@ class LauncherApp(ctk.CTk):
 
         r = result_holder[0]
         if not r or not r.get("token"):
-            _status("❌ Not completed. Try again.")
+            _status(tr('act_not_done'))
             return
 
         games_str = r.get("games", "")
@@ -1457,7 +1550,31 @@ class LauncherApp(ctk.CTk):
         if self._login_win:
             self._login_win.after(0, lambda: self._login_status.configure(text=text))
 
+    # ── Переключение языка ───────────────────────────────
+    def _toggle_lang(self):
+        set_app_lang('en' if _lang == 'ru' else 'ru')
+        self._apply_lang()
+
+    def _apply_lang(self):
+        try:
+            self.lang_btn.configure(text=f"🌐 {'EN' if _lang=='ru' else 'RU'}")
+            self.mycodes_btn.configure(text=tr('my_access'))
+        except Exception: pass
+        self._render()            # пересобрать карточки на новом языке
+        self._refresh_status()    # перерисовать текущий статус
+
     # ── Хелпер статуса ───────────────────────────────────
+    def _status(self, key, **kw):
+        self._status_kv = (key, kw)
+        txt = tr(key, **kw) if key else ""
+        self.after(0, lambda: self.status_lbl.configure(text=txt))
+
+    def _refresh_status(self):
+        kv = getattr(self, '_status_kv', None)
+        if kv:
+            key, kw = kv
+            self.status_lbl.configure(text=tr(key, **kw) if key else "")
+
     def _set_status(self, text):
         self.after(0, lambda: self.status_lbl.configure(text=text))
 

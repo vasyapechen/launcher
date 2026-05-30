@@ -1,6 +1,6 @@
 {
-  "version": "1.0.13",
+  "version": "1.0.14",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.zip",
-  "changelog": "Исправлена ошибка проверки сертификата при скачивании игр (поддержка системных и антивирусных сертификатов)."
+  "changelog": "Добавлено переключение языка (RU/EN). Кнопка обновления каталога заменена на переключатель языка."
 }
