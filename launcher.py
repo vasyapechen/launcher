@@ -556,13 +556,35 @@ class LauncherApp(ctk.CTk):
             )
             bat.write_text(bat_text, encoding="utf-8")
 
-            status("Перезапуск...")
-            subprocess.Popen(
-                ["cmd", "/c", str(bat)],
-                cwd=str(DATA_DIR),
-                creationflags=0x08000000  # CREATE_NO_WINDOW
-            )
-            self.after(300, self.destroy)
+            # Проверяем, можем ли писать в папку установки без прав администратора
+            def _writable(p):
+                try:
+                    t = Path(p) / ".w_test"
+                    t.write_text("x", encoding="utf-8"); t.unlink()
+                    return True
+                except Exception:
+                    return False
+
+            if _writable(install_dir):
+                status("Перезапуск...")
+                subprocess.Popen(
+                    ["cmd", "/c", str(bat)],
+                    cwd=str(DATA_DIR),
+                    creationflags=0x08000000  # CREATE_NO_WINDOW
+                )
+            else:
+                # Папка защищена (например Program Files) — нужны права администратора
+                status("Перезапуск (подтвердите права администратора)...")
+                ps_cmd = (
+                    "Start-Process -FilePath 'cmd.exe' "
+                    f"-ArgumentList '/c','\"{bat}\"' -Verb RunAs -WindowStyle Hidden"
+                )
+                subprocess.Popen(
+                    ["powershell", "-NoProfile", "-WindowStyle", "Hidden",
+                     "-Command", ps_cmd],
+                    creationflags=0x08000000
+                )
+            self.after(800, self.destroy)
         except Exception as e:
             status(f"Ошибка: {e}")
 

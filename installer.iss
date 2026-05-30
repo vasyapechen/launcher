@@ -14,9 +14,8 @@ AppId={{8C762944-32B4-41AF-AC23-70C6BD7A2B3A}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-; Ставим в пользовательскую папку — без прав администратора,
-; чтобы автообновление (замена папки) работало без UAC.
-PrivilegesRequired=lowest
+; Ставим в Program Files (требуются права администратора).
+PrivilegesRequired=admin
 DefaultDirName={autopf}\VasyaLauncher
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
