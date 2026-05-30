@@ -24,9 +24,29 @@ PATREON_URL  = "https://www.patreon.com/cw/vasya_pechen"
 # ── Пути ─────────────────────────────────────────────────
 BASE_DIR    = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
 ICON_FILE   = Path(sys._MEIPASS) / "icon.ico" if getattr(sys, 'frozen', False) else BASE_DIR / "icon.ico"
-STATE_FILE  = BASE_DIR / "games_state.json"
-CACHE_FILE  = BASE_DIR / "catalog_cache.json"
-CONFIG_FILE = BASE_DIR / "launcher_config.json"
+
+# Постоянные данные (состояние игр, конфиг, токен) храним в %LOCALAPPDATA%\VasyaLauncher,
+# чтобы они не терялись при обновлении/переносе .exe.
+DATA_DIR = Path(os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or str(BASE_DIR)) / "VasyaLauncher"
+try: DATA_DIR.mkdir(parents=True, exist_ok=True)
+except Exception: DATA_DIR = BASE_DIR
+
+STATE_FILE  = DATA_DIR / "games_state.json"
+CACHE_FILE  = DATA_DIR / "catalog_cache.json"
+CONFIG_FILE = DATA_DIR / "launcher_config.json"
+
+def _migrate_from_basedir(*names):
+    """Переносит старые файлы, лежавшие рядом с .exe, в DATA_DIR (один раз)."""
+    import shutil
+    for n in names:
+        old, new = BASE_DIR / n, DATA_DIR / n
+        try:
+            if old.exists() and not new.exists():
+                shutil.copy2(old, new)
+        except Exception: pass
+
+_migrate_from_basedir("games_state.json", "catalog_cache.json",
+                      "launcher_config.json", "auth_token.json", "device_id.txt")
 
 DEFAULT_GAMES_DIR = Path("C:/games")
 
@@ -46,7 +66,7 @@ GAMES_DIR = Path(_config.get("games_dir", str(DEFAULT_GAMES_DIR)))
 GAMES_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Auth ──────────────────────────────────────────────────
-TOKEN_FILE = BASE_DIR / "auth_token.json"
+TOKEN_FILE = DATA_DIR / "auth_token.json"
 
 def get_device_id():
     """Возвращает хэш реального железа (CPU + материнка + MAC + диск).
@@ -88,7 +108,7 @@ def get_device_id():
         return hashlib.sha256(combined.encode()).hexdigest()[:40]
 
     # Последний резерв — если железо вообще не читается (очень редко)
-    _id_file = BASE_DIR / "device_id.txt"
+    _id_file = DATA_DIR / "device_id.txt"
     if _id_file.exists():
         return _id_file.read_text().strip()
     _id = str(uuid.uuid4())
