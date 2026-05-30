@@ -6,7 +6,7 @@
 #define MyAppVersion "1.0.12"
 #define MyAppPublisher "vasya_pechen"
 #define MyAppExeName "Launcher.exe"
-#define MySource "dist_v109\Launcher"
+#define MySource "dist_v1012\Launcher"
 
 [Setup]
 ; Уникальный идентификатор приложения (для записи в «Установка и удаление программ»)
