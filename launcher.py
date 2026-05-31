@@ -992,7 +992,7 @@ class LauncherApp(ctk.CTk):
                              font=ctk.CTkFont(size=13), wrap="word")
         box.pack(fill="both", expand=True, padx=14, pady=(0, 10))
         box.insert("1.0", text)
-        box.configure(state="disabled")
+        self._add_textbox_context_menu(box)   # копирование (любая раскладка) + ПКМ-меню
 
         ctk.CTkButton(win, text=tr('close'), width=120, height=34,
                       fg_color="#2a2a44", hover_color="#3a3a5a",
@@ -1354,6 +1354,55 @@ class LauncherApp(ctk.CTk):
                 elif kc == 67: inner.event_generate("<<Copy>>");      return "break"  # C
                 elif kc == 88: inner.event_generate("<<Cut>>");       return "break"  # X
                 elif kc == 65: inner.event_generate("<<SelectAll>>"); return "break"  # A
+            inner.bind("<Control-KeyPress>", _ctrl_key)
+        except Exception:
+            pass
+
+    def _add_textbox_context_menu(self, box):
+        """Текстовое поле только для чтения: копирование по физ. клавише (любая раскладка) + ПКМ-меню."""
+        import tkinter as tk
+        try:
+            inner = box._textbox   # tk.Text внутри CTkTextbox
+        except AttributeError:
+            return
+
+        def _copy_text():
+            try:
+                sel = inner.get("sel.first", "sel.last")   # копируем выделение
+            except Exception:
+                sel = inner.get("1.0", "end-1c")            # нет выделения → копируем весь текст
+            if sel:
+                self.clipboard_clear(); self.clipboard_append(sel)
+
+        def _select_all():
+            inner.tag_add("sel", "1.0", "end-1c"); inner.focus_set()
+
+        # Только чтение: блокируем ввод/правку, но разрешаем выделение, Ctrl и навигацию
+        def _block_keys(ev):
+            if ev.state & 0x4:      # Ctrl зажат — пропускаем (копирование/выделить всё)
+                return
+            if ev.keysym in ("Left","Right","Up","Down","Home","End","Prior","Next"):
+                return
+            return "break"
+        inner.bind("<KeyPress>", _block_keys)
+
+        try:
+            menu = tk.Menu(inner, tearoff=0, bg="#1a1a2e", fg="#e8e8f8",
+                           activebackground="#2a2a4e", activeforeground="#e8e8f8", bd=0)
+            menu.add_command(label="Копировать",   command=_copy_text)
+            menu.add_command(label="Выделить всё", command=_select_all)
+
+            def _show_menu(ev):
+                try:    menu.tk_popup(ev.x_root, ev.y_root)
+                finally: menu.grab_release()
+            inner.bind("<Button-3>", _show_menu)
+
+            def _ctrl_key(ev):
+                if not (ev.state & 0x4):
+                    return
+                kc = ev.keycode
+                if   kc == 67: _copy_text();   return "break"   # C
+                elif kc == 65: _select_all();  return "break"   # A
             inner.bind("<Control-KeyPress>", _ctrl_key)
         except Exception:
             pass
