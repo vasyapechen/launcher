@@ -1,6 +1,6 @@
 {
-  "version": "1.0.15",
+  "version": "1.0.16",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.zip",
-  "changelog": "Добавлена кнопка «Инструкция» на карточке игры. Кнопка языка показывает текущий язык интерфейса."
+  "changelog": "В окне инструкции исправлено копирование при русской раскладке и добавлено контекстное меню по правой кнопке."
 }
