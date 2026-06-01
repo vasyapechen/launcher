@@ -3,18 +3,22 @@
     {
       "id": "flagrace",
       "name": "Flag Race",
-      "version": "1.17",
+      "version": "1.18",
       "description": "Гонка флагов стран мира",
       "size_mb": 29,
-      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.17/FlagRace.zip",
+      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.18/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": ["basic", "pro"],
       "is_new": false,
       "changelog": {
-        "ru": "🔥 Серии побед: текущая и топовая (включаются в настройках, редактируются кликом)\n🚩 Отдельный пак флагов для боковой панели и экрана победы\n🔀 Перестановка танков на парковке перетаскиванием",
-        "en": "🔥 Win streaks: current and best (toggle in settings, editable by click)\n🚩 Separate flag pack for the side panel and victory screen\n🔀 Drag tanks to rearrange them on the parking"
+        "ru": "Небольшие исправления ошибок.",
+        "en": "Minor bug fixes."
       },
       "changelogs": {
+        "1.18": {
+          "ru": "Небольшие исправления ошибок.",
+          "en": "Minor bug fixes."
+        },
         "1.17": {
           "ru": "🔥 Серии побед: текущая и топовая (включаются в настройках, редактируются кликом)\n🚩 Отдельный пак флагов для боковой панели и экрана победы\n🔀 Перестановка танков на парковке перетаскиванием",
           "en": "🔥 Win streaks: current and best (toggle in settings, editable by click)\n🚩 Separate flag pack for the side panel and victory screen\n🔀 Drag tanks to rearrange them on the parking"
