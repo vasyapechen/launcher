@@ -1249,17 +1249,21 @@ class LauncherApp(ctk.CTk):
 
     # ── Окно «Что нового» (патчноуты всех обновлённых версий) ────
     def _show_changelog(self, game, from_ver=None):
+        def _pick(v):
+            if isinstance(v, dict):
+                return (v.get(_lang) or v.get('ru') or v.get('en') or '').strip()
+            return (v or '').strip()
         new_ver = game.get('version', '')
         hist = game.get('changelogs') or {}
         cl = ''
         if hist:
             ft = _ver_tuple(from_ver) if from_ver else (-1,)
-            items = [(v, (n or '').strip()) for v, n in hist.items()
-                     if (-1,) < _ver_tuple(v) and _ver_tuple(v) > ft and _ver_tuple(v) <= _ver_tuple(new_ver) and (n or '').strip()]
+            items = [(v, _pick(n)) for v, n in hist.items()
+                     if _ver_tuple(v) > ft and _ver_tuple(v) <= _ver_tuple(new_ver) and _pick(n)]
             items.sort(key=lambda x: _ver_tuple(x[0]), reverse=True)   # новые сверху
             cl = "\n\n".join(f"▎v{v}\n{n}" for v, n in items)
         if not cl:
-            cl = (game.get('changelog') or '').strip()
+            cl = _pick(game.get('changelog'))
         if not cl:
             return
         win = ctk.CTkToplevel(self)
