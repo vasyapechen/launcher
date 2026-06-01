@@ -1,6 +1,6 @@
 {
-  "version": "1.0.17",
+  "version": "1.0.18",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.zip",
-  "changelog": "• Анимация загрузки на кнопке «Играть» — видно, что игра запускается\n• Индикатор загрузки при поиске игр на старте\n• Окно «Что нового» после обновления игры — показывает изменения всех пропущенных версий (на русском и английском)"
+  "changelog": "Небольшие улучшения."
 }

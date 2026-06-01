@@ -38,7 +38,7 @@ except Exception:
     pass
 
 # ── Версия и URLs ────────────────────────────────────────
-LAUNCHER_VERSION = "1.0.17"
+LAUNCHER_VERSION = "1.0.18"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
@@ -452,7 +452,7 @@ class GameCard(ctk.CTkFrame):
 
     # ── Анимация «Запуск…» на кнопке Играть ──
     _SPIN_FRAMES = ["◐", "◓", "◑", "◒"]
-    def show_launching(self, duration=6000):
+    def show_launching(self, duration=9000):
         self._spin_i = 0
         try: self.btn.configure(state="disabled")
         except Exception: pass

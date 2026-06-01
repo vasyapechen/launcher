@@ -3,7 +3,7 @@
 ; с мастером установки, выбором директории, прогресс-баром, ярлыками и деинсталлятором.
 
 #define MyAppName "Vasya Launcher"
-#define MyAppVersion "1.0.17"
+#define MyAppVersion "1.0.18"
 #define MyAppPublisher "vasya_pechen"
 #define MyAppExeName "Launcher.exe"
 #define MySource "dist\Launcher"
