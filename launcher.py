@@ -132,7 +132,7 @@ LANG = {
     "launched":"Запущено: {name}","close_before_update":"Закройте {name} перед обновлением",
     "installed_ok":"{name} установлена ✓","updated_ok":"{name} обновлена ✓","download_error":"Ошибка загрузки: {e}",
     "card_installed":"✓ установлена","card_play":"▶   Играть","card_update_tag":"обновление",
-    "launching":"Запуск…","changelog_title":"Что нового",
+    "launching":"Запуск…","changelog_title":"Что нового","searching_games":"Поиск доступных игр…",
     "card_update":"🔄   Обновить","card_download":"⬇   Скачать","card_uninstall":"🗑  Удалить",
     "card_downloading":"Скачивание...","no_games":"Игр не найдено",
     "upd_available":"🔄  Доступно обновление","upd_new_version":"Новая версия v{v}",
@@ -172,7 +172,7 @@ LANG = {
     "launched":"Launched: {name}","close_before_update":"Close {name} before updating",
     "installed_ok":"{name} installed ✓","updated_ok":"{name} updated ✓","download_error":"Download error: {e}",
     "card_installed":"✓ installed","card_play":"▶   Play","card_update_tag":"update",
-    "launching":"Launching…","changelog_title":"What's new",
+    "launching":"Launching…","changelog_title":"What's new","searching_games":"Searching for games…",
     "card_update":"🔄   Update","card_download":"⬇   Download","card_uninstall":"🗑  Uninstall",
     "card_downloading":"Downloading...","no_games":"No games found",
     "upd_available":"🔄  Update available","upd_new_version":"New version v{v}",
@@ -608,6 +608,7 @@ class LauncherApp(ctk.CTk):
         return True
 
     def _startup(self):
+        self.after(0, self._show_loading)   # бегущая полоса, пока ищем игры
         self._check_launcher_update()   # проверяем обновление лаунчера всегда при запуске
         self._status('checking_auth')
         token = self._auth.get("token")
@@ -856,6 +857,25 @@ class LauncherApp(ctk.CTk):
                     changed = True
         if changed:
             save_state(self._state)
+
+    # ── Экран загрузки каталога (бегущая полоса) ─────────
+    def _show_loading(self):
+        try:
+            for w in self.scroll.winfo_children():
+                w.destroy()
+        except Exception:
+            return
+        self._cards.clear()
+        box = ctk.CTkFrame(self.scroll, fg_color="transparent")
+        box.pack(expand=True, pady=130)
+        ctk.CTkLabel(box, text="🔍", font=ctk.CTkFont(size=42)).pack(pady=(0, 10))
+        ctk.CTkLabel(box, text=tr('searching_games'),
+                     font=ctk.CTkFont(size=14, weight="bold"),
+                     text_color="#aaaacc").pack(pady=(0, 14))
+        bar = ctk.CTkProgressBar(box, width=240, height=8, corner_radius=4,
+                                 mode="indeterminate")
+        bar.pack()
+        bar.start()
 
     # ── Рендер карточек ──────────────────────────────────
     def _render(self):
