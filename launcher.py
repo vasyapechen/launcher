@@ -1159,7 +1159,8 @@ class LauncherApp(ctk.CTk):
             return
 
         gid       = game['id']
-        is_update = bool(self._state.get(gid, {}).get('version'))
+        old_ver   = self._state.get(gid, {}).get('version')
+        is_update = bool(old_ver)
 
         # При обновлении нельзя трогать файлы, если игра запущена
         if is_update and self._game_process_running(game):
@@ -1236,8 +1237,8 @@ class LauncherApp(ctk.CTk):
             if card: self.after(0, card.done_progress)
             self.after(0, self._render)
             self._status('updated_ok' if is_update else 'installed_ok', name=game['name'])
-            if is_update and (game.get('changelog') or '').strip():
-                self.after(300, lambda: self._show_changelog(game))
+            if is_update and (game.get('changelogs') or game.get('changelog')):
+                self.after(300, lambda: self._show_changelog(game, old_ver))
 
         except Exception as e:
             self._status('download_error', e=e)
@@ -1246,9 +1247,19 @@ class LauncherApp(ctk.CTk):
             part_path.unlink(missing_ok=True)
             zip_path.unlink(missing_ok=True)
 
-    # ── Окно «Что нового» (патчноут после обновления) ────
-    def _show_changelog(self, game):
-        cl = (game.get('changelog') or '').strip()
+    # ── Окно «Что нового» (патчноуты всех обновлённых версий) ────
+    def _show_changelog(self, game, from_ver=None):
+        new_ver = game.get('version', '')
+        hist = game.get('changelogs') or {}
+        cl = ''
+        if hist:
+            ft = _ver_tuple(from_ver) if from_ver else (-1,)
+            items = [(v, (n or '').strip()) for v, n in hist.items()
+                     if (-1,) < _ver_tuple(v) and _ver_tuple(v) > ft and _ver_tuple(v) <= _ver_tuple(new_ver) and (n or '').strip()]
+            items.sort(key=lambda x: _ver_tuple(x[0]), reverse=True)   # новые сверху
+            cl = "\n\n".join(f"▎v{v}\n{n}" for v, n in items)
+        if not cl:
+            cl = (game.get('changelog') or '').strip()
         if not cl:
             return
         win = ctk.CTkToplevel(self)
