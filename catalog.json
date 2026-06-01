@@ -3,10 +3,10 @@
     {
       "id": "flagrace",
       "name": "Flag Race",
-      "version": "1.18",
+      "version": "1.19",
       "description": "Гонка флагов стран мира",
       "size_mb": 29,
-      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.18/FlagRace.zip",
+      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.19/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": ["basic", "pro"],
       "is_new": false,
@@ -15,6 +15,10 @@
         "en": "Minor bug fixes."
       },
       "changelogs": {
+        "1.19": {
+          "ru": "Небольшие исправления ошибок.",
+          "en": "Minor bug fixes."
+        },
         "1.18": {
           "ru": "Небольшие исправления ошибок.",
           "en": "Minor bug fixes."
