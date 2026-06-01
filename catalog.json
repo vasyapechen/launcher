@@ -3,18 +3,22 @@
     {
       "id": "flagrace",
       "name": "Flag Race",
-      "version": "1.16",
+      "version": "1.17",
       "description": "Гонка флагов стран мира",
-      "size_mb": 28,
-      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.16/FlagRace.zip",
+      "size_mb": 29,
+      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.17/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": ["basic", "pro"],
       "is_new": false,
       "changelog": {
-        "ru": "🇷🇸 Добавлены флаги Сербии и Доминики\n🇬🇧 Исправлено отображение флагов Великобритании, Косово и Тонги",
-        "en": "🇷🇸 Added Serbia and Dominica flags\n🇬🇧 Fixed UK, Kosovo and Tonga flags"
+        "ru": "🔥 Серии побед: текущая и топовая (включаются в настройках, редактируются кликом)\n🚩 Отдельный пак флагов для боковой панели и экрана победы\n🔀 Перестановка танков на парковке перетаскиванием",
+        "en": "🔥 Win streaks: current and best (toggle in settings, editable by click)\n🚩 Separate flag pack for the side panel and victory screen\n🔀 Drag tanks to rearrange them on the parking"
       },
       "changelogs": {
+        "1.17": {
+          "ru": "🔥 Серии побед: текущая и топовая (включаются в настройках, редактируются кликом)\n🚩 Отдельный пак флагов для боковой панели и экрана победы\n🔀 Перестановка танков на парковке перетаскиванием",
+          "en": "🔥 Win streaks: current and best (toggle in settings, editable by click)\n🚩 Separate flag pack for the side panel and victory screen\n🔀 Drag tanks to rearrange them on the parking"
+        },
         "1.14": {
           "ru": "🅿️ Паркинг: до 70 стран, не более 10 в ряду\n↔ Ползунок расстояния между танками\n🚩 Новый ровный и насыщенный пак флагов\n🔊 Кастомные звуки победы (папка winsounds)",
           "en": "🅿️ Parking: up to 70 countries, max 10 per row\n↔ Slider for spacing between tanks\n🚩 New crisp and vivid flag pack\n🔊 Custom victory sounds (winsounds folder)"
