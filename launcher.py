@@ -132,6 +132,7 @@ LANG = {
     "launched":"Запущено: {name}","close_before_update":"Закройте {name} перед обновлением",
     "installed_ok":"{name} установлена ✓","updated_ok":"{name} обновлена ✓","download_error":"Ошибка загрузки: {e}",
     "card_installed":"✓ установлена","card_play":"▶   Играть","card_update_tag":"обновление",
+    "launching":"Запуск…","changelog_title":"Что нового",
     "card_update":"🔄   Обновить","card_download":"⬇   Скачать","card_uninstall":"🗑  Удалить",
     "card_downloading":"Скачивание...","no_games":"Игр не найдено",
     "upd_available":"🔄  Доступно обновление","upd_new_version":"Новая версия v{v}",
@@ -171,6 +172,7 @@ LANG = {
     "launched":"Launched: {name}","close_before_update":"Close {name} before updating",
     "installed_ok":"{name} installed ✓","updated_ok":"{name} updated ✓","download_error":"Download error: {e}",
     "card_installed":"✓ installed","card_play":"▶   Play","card_update_tag":"update",
+    "launching":"Launching…","changelog_title":"What's new",
     "card_update":"🔄   Update","card_download":"⬇   Download","card_uninstall":"🗑  Uninstall",
     "card_downloading":"Downloading...","no_games":"No games found",
     "upd_available":"🔄  Update available","upd_new_version":"New version v{v}",
@@ -447,6 +449,29 @@ class GameCard(ctk.CTkFrame):
     def done_progress(self):
         self._prog_frame.pack_forget()
         self.btn.configure(state="normal")
+
+    # ── Анимация «Запуск…» на кнопке Играть ──
+    _SPIN_FRAMES = ["◐", "◓", "◑", "◒"]
+    def show_launching(self, duration=6000):
+        self._spin_i = 0
+        try: self.btn.configure(state="disabled")
+        except Exception: pass
+        self._spin_anim()
+        try: self.after(duration, self.stop_launching)
+        except Exception: pass
+    def _spin_anim(self):
+        try:
+            f = self._SPIN_FRAMES[self._spin_i % len(self._SPIN_FRAMES)]
+            self._spin_i += 1
+            self.btn.configure(text=f"{f}  {tr('launching')}")
+            self._spin_job = self.after(120, self._spin_anim)
+        except Exception:
+            pass
+    def stop_launching(self):
+        try: self.after_cancel(self._spin_job)
+        except Exception: pass
+        try: self.btn.configure(state="normal", text=tr('card_play'))
+        except Exception: pass
 
 
 def _brighten(hex_col):
@@ -1049,7 +1074,9 @@ class LauncherApp(ctk.CTk):
             return
         inst = self._state.get(game['id'], {})
         if inst.get('version') == game['version']:
-            self._launch(game)
+            card = self._cards.get(game['id'])
+            if card: card.show_launching()
+            threading.Thread(target=self._launch, args=(game,), daemon=True).start()
         else:
             threading.Thread(target=self._download,
                              args=(game,), daemon=True).start()
@@ -1189,6 +1216,8 @@ class LauncherApp(ctk.CTk):
             if card: self.after(0, card.done_progress)
             self.after(0, self._render)
             self._status('updated_ok' if is_update else 'installed_ok', name=game['name'])
+            if is_update and (game.get('changelog') or '').strip():
+                self.after(300, lambda: self._show_changelog(game))
 
         except Exception as e:
             self._status('download_error', e=e)
@@ -1196,6 +1225,32 @@ class LauncherApp(ctk.CTk):
             # Убрать незавершённые временные файлы; старая установка остаётся как была
             part_path.unlink(missing_ok=True)
             zip_path.unlink(missing_ok=True)
+
+    # ── Окно «Что нового» (патчноут после обновления) ────
+    def _show_changelog(self, game):
+        cl = (game.get('changelog') or '').strip()
+        if not cl:
+            return
+        win = ctk.CTkToplevel(self)
+        win.title(tr('changelog_title'))
+        win.geometry("440x380")
+        win.resizable(False, False)
+        win.configure(fg_color=COLORS["bg"])
+        self._bring_to_front(win)
+        ctk.CTkLabel(win, text=f"🎉 {game['name']} — v{game['version']}",
+                     font=ctk.CTkFont(size=17, weight="bold"),
+                     text_color=COLORS["accent"]).pack(pady=(20, 2))
+        ctk.CTkLabel(win, text=tr('changelog_title'),
+                     font=ctk.CTkFont(size=12),
+                     text_color=COLORS["gray"]).pack()
+        box = ctk.CTkTextbox(win, width=400, height=250, fg_color="#16162a",
+                             font=ctk.CTkFont(size=12), wrap="word")
+        box.pack(padx=18, pady=12, fill="both", expand=True)
+        box.insert("1.0", cl)
+        box.configure(state="disabled")
+        ctk.CTkButton(win, text="OK", width=130, height=36,
+                      fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
+                      corner_radius=10, command=win.destroy).pack(pady=(0, 16))
 
     # ── Экран входа ──────────────────────────────────────
     def _show_login_screen(self, game=None):
