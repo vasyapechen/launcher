@@ -445,8 +445,9 @@ class GameCard(ctk.CTkFrame):
         self._build_badges()
 
     def _chip(self, parent, text, bg, fg):
-        c = ctk.CTkLabel(parent, text=f"  {text}  ", fg_color=bg, text_color=fg,
-                         corner_radius=9, font=ctk.CTkFont(size=10, weight="bold"))
+        c = ctk.CTkLabel(parent, text=f" {text} ", fg_color=bg, text_color=fg,
+                         corner_radius=5, height=14,
+                         font=ctk.CTkFont(size=8, weight="bold"))
         c.bind("<Button-1>", lambda e: show_subscription_info(self))
         c.configure(cursor="hand2")
         return c
