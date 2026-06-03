@@ -665,19 +665,20 @@ class LauncherApp(ctk.CTk):
 
     # ── Запуск ───────────────────────────────────────────
     def _has_game_access(self, game):
-        """Доступ: pro_max → все; pro → всё кроме раннего доступа; купленная/по коду игра → эта игра."""
+        """Доступ: pro_max → все; pro → всё кроме раннего доступа; купленная/по коду игра → эта игра.
+        Коды устройства складываются с подпиской."""
         tier  = self._auth.get("tier", "")
         owned = self._auth.get("games", [])
-        if not tier and not owned:
-            return False
-        if game["id"] in owned:          # куплена / активирована кодом
+        dev   = self._auth.get("device_games", [])
+        gid   = game["id"]
+        if gid in owned or gid in dev or "all" in dev:   # покупка / код на эту игру / код «все игры»
             return True
         if tier == "pro_max":
             return True
         if tier == "pro":
             early, _ = early_access_info(game)
             return not early             # pro — всё, кроме раннего доступа (нужен Pro Max)
-        return False                     # buyer/гость без лицензии на эту игру
+        return False                     # без подписки и без кода на эту игру
 
     def _startup(self):
         self.after(0, self._show_loading)   # бегущая полоса, пока ищем игры
@@ -713,9 +714,34 @@ class LauncherApp(ctk.CTk):
 
     def _after_login(self):
         self._logged_in = True
+        dg = self._fetch_device_codes()           # коды устройства складываются с подпиской
+        if dg is not None:
+            self._auth["device_games"] = dg
+            save_auth(self._auth)
         name = self._auth.get("name", "")
         self._status('welcome', name=name) if name else self._status(None)
         self._load_catalog()
+
+    def _fetch_device_codes(self):
+        """Игры, выданные действующими кодами на ЭТОМ устройстве. None — если сеть недоступна."""
+        try:
+            payload = json.dumps({"device_id": DEVICE_ID}).encode()
+            req = _ur.Request(f"{AUTH_SERVER}/auth/my_codes", data=payload,
+                              headers={"Content-Type": "application/json",
+                                       "User-Agent": "FlagRaceLauncher/1.0"})
+            r = _ur.urlopen(req, timeout=12, context=SSL_CTX)
+            data = json.loads(r.read())
+            now = time.time(); games = []
+            for c in data.get("codes", []):
+                exp = c.get("expires_at")
+                if exp and now > exp:
+                    continue
+                gid = c.get("game_id")
+                if gid and gid not in games:
+                    games.append(gid)
+            return games
+        except Exception:
+            return None
 
     def _check_launcher_update(self):
         data = fetch_json(VERSION_URL)
@@ -1687,14 +1713,26 @@ class LauncherApp(ctk.CTk):
             self._set_login_status(msgs.get(err, f"❌ {err}"))
             return
 
-        self._auth = {
-            "token":       result["token"],
-            "name":        result.get("name", "Guest"),
-            "tier":        result.get("tier", "guest"),
-            "games":       result.get("games", []),
-            "last_verify": time.time(),
-        }
-        save_auth(self._auth)
+        if self._logged_in and self._auth.get("tier") in ("pro", "pro_max"):
+            # Подписчик: НЕ затираем подписку — код просто добавляется к устройству.
+            dev = self._fetch_device_codes()
+            if dev is not None:
+                self._auth["device_games"] = dev
+            else:
+                merged = list(dict.fromkeys((self._auth.get("device_games") or []) + result.get("games", [])))
+                self._auth["device_games"] = merged
+            save_auth(self._auth)
+        else:
+            # Без подписки: код становится основной личностью.
+            self._auth = {
+                "token":       result["token"],
+                "name":        result.get("name", "Guest"),
+                "tier":        result.get("tier", "guest"),
+                "games":       result.get("games", []),
+                "device_games": result.get("games", []),
+                "last_verify": time.time(),
+            }
+            save_auth(self._auth)
 
         if self._login_win:
             self._login_win.after(0, self._login_win.destroy)
