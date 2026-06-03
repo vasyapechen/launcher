@@ -9,6 +9,8 @@
       "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.19/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": ["basic", "pro"],
+      "released": "2025-01-01",
+      "early_access_days": 14,
       "is_new": false,
       "changelog": {
         "ru": "Небольшие исправления ошибок.",

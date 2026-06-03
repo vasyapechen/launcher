@@ -1,5 +1,5 @@
 import customtkinter as ctk
-import json, os, sys, threading, zipfile, subprocess, webbrowser, uuid, time, ssl
+import json, os, sys, threading, zipfile, subprocess, webbrowser, uuid, time, ssl, datetime
 from datetime import datetime
 import urllib.request as _ur
 import urllib.parse
@@ -133,6 +133,8 @@ LANG = {
     "installed_ok":"{name} установлена ✓","updated_ok":"{name} обновлена ✓","download_error":"Ошибка загрузки: {e}",
     "card_installed":"✓ установлена","card_play":"▶   Играть","card_update_tag":"обновление",
     "launching":"Запуск…","changelog_title":"Что нового","searching_games":"Поиск доступных игр…",
+    "badge_early":"🌱 Ранний доступ","sub_title":"Подписка","sub_patreon":"Открыть Patreon",
+    "sub_body":"🎮 Доступ к играм — по подписке на Patreon.\n\n⭐ Pro — все обычные игры.\n👑 Pro Max — ВСЕ игры, включая ранний доступ.\n\n🌱 Ранний доступ: новые игры первые 14 дней доступны только по Pro Max, затем выходят из раннего доступа и открываются и для Pro.\n\nОформить или повысить подписку можно на Patreon.",
     "card_update":"🔄   Обновить","card_download":"⬇   Скачать","card_uninstall":"🗑  Удалить",
     "card_downloading":"Скачивание...","no_games":"Игр не найдено",
     "upd_available":"🔄  Доступно обновление","upd_new_version":"Новая версия v{v}",
@@ -173,6 +175,8 @@ LANG = {
     "installed_ok":"{name} installed ✓","updated_ok":"{name} updated ✓","download_error":"Download error: {e}",
     "card_installed":"✓ installed","card_play":"▶   Play","card_update_tag":"update",
     "launching":"Launching…","changelog_title":"What's new","searching_games":"Searching for games…",
+    "badge_early":"🌱 Early access","sub_title":"Subscription","sub_patreon":"Open Patreon",
+    "sub_body":"🎮 Game access is via a Patreon subscription.\n\n⭐ Pro — all regular games.\n👑 Pro Max — ALL games, including early access.\n\n🌱 Early access: new games are Pro Max-only for the first 14 days, then leave early access and become available to Pro too.\n\nSubscribe or upgrade on Patreon.",
     "card_update":"🔄   Update","card_download":"⬇   Download","card_uninstall":"🗑  Uninstall",
     "card_downloading":"Downloading...","no_games":"No games found",
     "upd_available":"🔄  Update available","upd_new_version":"New version v{v}",
@@ -438,6 +442,27 @@ class GameCard(ctk.CTkFrame):
         else:
             ctk.CTkFrame(self, fg_color="transparent", height=14).pack()
 
+        self._build_badges()
+
+    def _chip(self, parent, text, bg, fg):
+        c = ctk.CTkLabel(parent, text=f"  {text}  ", fg_color=bg, text_color=fg,
+                         corner_radius=9, font=ctk.CTkFont(size=10, weight="bold"))
+        c.bind("<Button-1>", lambda e: show_subscription_info(self))
+        c.configure(cursor="hand2")
+        return c
+
+    def _build_badges(self):
+        early, _days = early_access_info(self.game)
+        if early:
+            f_tl = ctk.CTkFrame(self, fg_color="transparent"); f_tl.place(x=8, y=8, anchor="nw")
+            self._chip(f_tl, tr('badge_early'), BADGE_EARLY, "#ffffff").pack()
+            f_tr = ctk.CTkFrame(self, fg_color="transparent"); f_tr.place(relx=1.0, x=-8, y=8, anchor="ne")
+            self._chip(f_tr, "PRO MAX", BADGE_PROMAX, "#1a1a2a").pack()
+        else:
+            f_tr = ctk.CTkFrame(self, fg_color="transparent"); f_tr.place(relx=1.0, x=-8, y=8, anchor="ne")
+            self._chip(f_tr, "PRO MAX", BADGE_PROMAX, "#1a1a2a").pack(side="right", padx=(4, 0))
+            self._chip(f_tr, "PRO", BADGE_PRO, "#ffffff").pack(side="right")
+
     def show_progress(self, value, text=""):
         self._prog_frame.pack(pady=(8, 0), padx=16, fill="x")
         self.progress.pack(fill="x")
@@ -482,6 +507,49 @@ def _brighten(hex_col):
         r,g,b = min(255,r+30), min(255,g+30), min(255,b+30)
         return f"#{r:02x}{g:02x}{b:02x}"
     except: return hex_col
+
+
+# ── Подписки / ранний доступ ──
+BADGE_PRO    = "#3a7bd5"
+BADGE_PROMAX = "#e6b422"
+BADGE_EARLY  = "#e0712a"
+
+def early_access_info(game):
+    """(is_early, days_left) — игра в раннем доступе, если released + early_access_days ещё не прошли."""
+    rel = game.get('released')
+    days = int(game.get('early_access_days', 14) or 14)
+    if not rel: return (False, 0)
+    try:
+        d = datetime.date.fromisoformat(str(rel)[:10])
+    except Exception:
+        return (False, 0)
+    end = d + datetime.timedelta(days=days)
+    today = datetime.date.today()
+    return (True, (end - today).days) if today < end else (False, 0)
+
+def show_subscription_info(master):
+    win = ctk.CTkToplevel(master)
+    win.title(tr('sub_title'))
+    win.geometry("450x430")
+    win.resizable(False, False)
+    win.configure(fg_color=COLORS["bg"])
+    try: win.after(60, lambda: (win.lift(), win.attributes("-topmost", True)))
+    except Exception: pass
+    ctk.CTkLabel(win, text="💎 " + tr('sub_title'),
+                 font=ctk.CTkFont(size=20, weight="bold"),
+                 text_color=COLORS["accent"]).pack(pady=(20, 4))
+    box = ctk.CTkTextbox(win, width=410, height=270, fg_color="#16162a",
+                         font=ctk.CTkFont(size=12), wrap="word")
+    box.pack(padx=18, pady=10, fill="both", expand=True)
+    box.insert("1.0", tr('sub_body'))
+    box.configure(state="disabled")
+    ctk.CTkButton(win, text="🟠 " + tr('sub_patreon'), height=40,
+                  fg_color="#e0712a", hover_color=_brighten("#e0712a"),
+                  corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
+                  command=lambda: webbrowser.open(PATREON_URL)).pack(pady=(0, 8))
+    ctk.CTkButton(win, text="OK", width=120, fg_color=COLORS["btn_play"],
+                  hover_color=_brighten(COLORS["btn_play"]), corner_radius=10,
+                  command=win.destroy).pack(pady=(0, 14))
 
 
 # ══════════════════════════════════════════════════════════
