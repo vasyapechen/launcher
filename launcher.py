@@ -42,7 +42,7 @@ LAUNCHER_VERSION = "1.0.18"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
-PATREON_URL  = "https://www.patreon.com/cw/vasya_pechen"
+PATREON_URL  = "https://www.patreon.com/cw/vasya_pechen/membership"
 
 # ── Пути ─────────────────────────────────────────────────
 BASE_DIR    = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
