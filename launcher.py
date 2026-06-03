@@ -461,8 +461,8 @@ class GameCard(ctk.CTkFrame):
             self._chip(f_tr, "PRO MAX", BADGE_PROMAX, "#1a1a2a").pack()
         else:
             f_tr = ctk.CTkFrame(self, fg_color="transparent"); f_tr.place(relx=1.0, x=-8, y=8, anchor="ne")
-            self._chip(f_tr, "PRO MAX", BADGE_PROMAX, "#1a1a2a").pack(side="right", padx=(4, 0))
-            self._chip(f_tr, "PRO", BADGE_PRO, "#ffffff").pack(side="right")
+            self._chip(f_tr, "PRO MAX", BADGE_PROMAX, "#1a1a2a").pack(anchor="e")
+            self._chip(f_tr, "PRO", BADGE_PRO, "#ffffff").pack(anchor="e", pady=(3, 0))
 
     def show_progress(self, value, text=""):
         self._prog_frame.pack(pady=(8, 0), padx=16, fill="x")
