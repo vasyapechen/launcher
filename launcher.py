@@ -665,16 +665,19 @@ class LauncherApp(ctk.CTk):
 
     # ── Запуск ───────────────────────────────────────────
     def _has_game_access(self, game):
-        """Проверяет, есть ли у текущего пользователя доступ к этой игре."""
+        """Доступ: pro_max → все; pro → всё кроме раннего доступа; купленная/по коду игра → эта игра."""
         tier  = self._auth.get("tier", "")
         owned = self._auth.get("games", [])
-        if not tier:
+        if not tier and not owned:
             return False
-        # Покупатель: только купленные игры
-        if tier == "buyer":
-            return game["id"] in owned
-        # Подписчик / гость-код: доступ ко всем играм
-        return True
+        if game["id"] in owned:          # куплена / активирована кодом
+            return True
+        if tier == "pro_max":
+            return True
+        if tier == "pro":
+            early, _ = early_access_info(game)
+            return not early             # pro — всё, кроме раннего доступа (нужен Pro Max)
+        return False                     # buyer/гость без лицензии на эту игру
 
     def _startup(self):
         self.after(0, self._show_loading)   # бегущая полоса, пока ищем игры
@@ -695,6 +698,7 @@ class LauncherApp(ctk.CTk):
                 self._auth["last_verify"] = time.time()
                 self._auth["name"]  = result.get("name", "")
                 self._auth["games"] = result.get("games", [])
+                if result.get("tier"): self._auth["tier"] = result.get("tier")
                 save_auth(self._auth)
                 self._logged_in = True
                 self._after_login()
@@ -1159,7 +1163,11 @@ class LauncherApp(ctk.CTk):
             return
         # Проверяем доступ к конкретной игре
         if not self._has_game_access(game):
-            self._show_activate_screen(game)
+            tier = self._auth.get("tier", "")
+            if tier in ("pro", "pro_max") or self._auth.get("games"):
+                show_subscription_info(self)        # подписка есть, но уровня не хватает (нужен Pro Max)
+            else:
+                self._show_activate_screen(game)    # нет подписки/кода — экран активации
             return
         inst = self._state.get(game['id'], {})
         if inst.get('version') == game['version']:
