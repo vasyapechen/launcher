@@ -3,10 +3,10 @@
     {
       "id": "flagrace",
       "name": "Flag Race",
-      "version": "1.19",
+      "version": "1.20",
       "description": "Гонка флагов стран мира",
-      "size_mb": 29,
-      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.19/FlagRace.zip",
+      "size_mb": 30,
+      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.20/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": [
         "basic",
@@ -16,8 +16,8 @@
       "early_access_days": 14,
       "is_new": false,
       "changelog": {
-        "ru": "Небольшие исправления ошибок.",
-        "en": "Minor bug fixes."
+        "ru": "🌀 Новый стиль «Мираж» — процедурная тема. По сиду генерируются уникальная палитра, объекты (сферы/кристаллы/кольца/искры/штрихи…), динамика (орбиты/поток/маятник/спираль…) и фон арены (11 узоров). Кнопка «🎲 Новый мираж» — бесконечные неповторимые варианты.",
+        "en": "🌀 New 'Mirage' style — a procedural theme. Each seed generates a unique palette, objects (orbs/shards/rings/sparks/streaks…), motion (orbit/stream/sway/spiral…) and arena background (11 patterns). The '🎲 New mirage' button gives endless unique looks."
       },
       "changelogs": {
         "1.19": {
@@ -43,6 +43,10 @@
         "1.16": {
           "ru": "🇷🇸 Добавлены флаги Сербии и Доминики\n🇬🇧 Исправлено отображение флагов Великобритании, Косово и Тонги",
           "en": "🇷🇸 Added Serbia and Dominica flags\n🇬🇧 Fixed UK, Kosovo and Tonga flags"
+        },
+        "1.20": {
+          "ru": "🌀 Новый стиль «Мираж» — процедурная тема. По сиду генерируются уникальная палитра, объекты (сферы/кристаллы/кольца/искры/штрихи…), динамика (орбиты/поток/маятник/спираль…) и фон арены (11 узоров). Кнопка «🎲 Новый мираж» — бесконечные неповторимые варианты.",
+          "en": "🌀 New 'Mirage' style — a procedural theme. Each seed generates a unique palette, objects (orbs/shards/rings/sparks/streaks…), motion (orbit/stream/sway/spiral…) and arena background (11 patterns). The '🎲 New mirage' button gives endless unique looks."
         }
       },
       "guide": {
