@@ -38,7 +38,7 @@ except Exception:
     pass
 
 # ── Версия и URLs ────────────────────────────────────────
-LAUNCHER_VERSION = "1.1.1"
+LAUNCHER_VERSION = "1.1.2"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
@@ -300,7 +300,11 @@ def verify_token(token):
         r = _ur.urlopen(req, timeout=10, context=SSL_CTX)
         return json.loads(r.read())
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        # 401 = сервер реально отверг токен (недействителен/нет подписки) → разлогин.
+        # Прочие ошибки (нет сети, таймаут) → не трогаем сохранённый вход.
+        if getattr(e, "code", None) == 401:
+            return {"ok": False, "auth_failed": True, "error": "unauthorized"}
+        return {"ok": False, "network": True, "error": str(e)}
 
 # ── Состояние установленных игр ───────────────────────────
 def load_state():
@@ -730,14 +734,9 @@ class LauncherApp(ctk.CTk):
         self._check_launcher_update()   # проверяем обновление лаунчера всегда при запуске
         self._status('checking_auth')
         token = self._auth.get("token")
-        last_verify = self._auth.get("last_verify", 0)
-        need_verify = (time.time() - last_verify) > 3600   # раз в час
 
-        if token and not need_verify:
-            self._logged_in = True
-            self._after_login()
-            return
-
+        # Проверяем тариф ПРИ КАЖДОМ открытии — сервер перечитывает подписку с Patreon
+        # (апгрейд/смена тарифа применяются без перелогина).
         if token:
             result = verify_token(token)
             if result.get("ok"):
@@ -749,9 +748,14 @@ class LauncherApp(ctk.CTk):
                 self._logged_in = True
                 self._after_login()
                 return
-            else:
-                clear_auth()
+            elif result.get("auth_failed"):
+                clear_auth()            # токен реально недействителен → разлогин
                 self._auth = {}
+            else:
+                # Нет сети — работаем оффлайн с сохранённым входом, не разлогиниваем
+                self._logged_in = True
+                self._after_login()
+                return
 
         # Нет токена — загружаем каталог, но без возможности играть
         self._status('sign_in_to_play')
