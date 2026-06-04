@@ -798,7 +798,7 @@ class LauncherApp(ctk.CTk):
         """Окно с предложением обновить лаунчер."""
         win = ctk.CTkToplevel(self)
         win.title("Обновление лаунчера")
-        win.geometry("400x230")
+        win.geometry("400x320")
         win.resizable(False, False)
         win.configure(fg_color=COLORS["bg"])
         win.protocol("WM_DELETE_WINDOW", win.destroy)
@@ -812,8 +812,12 @@ class LauncherApp(ctk.CTk):
                      text_color=COLORS["gray"]).pack()
         cl = data.get('changelog', '')
         if cl:
-            ctk.CTkLabel(win, text=cl, font=ctk.CTkFont(size=11),
-                         text_color="#888899", wraplength=340).pack(pady=(8, 0))
+            # Прокручиваемая область фикс. высоты — длинный changelog не выталкивает кнопки
+            clbox = ctk.CTkTextbox(win, width=350, height=96, fg_color="#16162a",
+                                   font=ctk.CTkFont(size=11), wrap="word")
+            clbox.pack(pady=(8, 0), padx=20)
+            clbox.insert("1.0", cl)
+            clbox.configure(state="disabled")
 
         self._upd_status = ctk.CTkLabel(win, text="", font=ctk.CTkFont(size=11),
                                         text_color=COLORS["orange"])
