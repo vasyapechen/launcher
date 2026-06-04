@@ -1,6 +1,6 @@
 {
-  "version": "1.1.1",
+  "version": "1.1.2",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.zip",
-  "changelog": "Исправлена плашка «Ранний доступ» и окно обновления."
+  "changelog": "Тариф Patreon обновляется при каждом открытии (без перелогина). Не разлогинивает при потере сети."
 }
