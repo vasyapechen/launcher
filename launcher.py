@@ -555,7 +555,8 @@ def early_access_end_date(game):
 def show_subscription_info(master, game=None):
     win = ctk.CTkToplevel(master)
     win.title(tr('sub_title'))
-    win.geometry("450x470" if game else "450x430")
+    _has_guide = bool(game and game.get('guide') and hasattr(master, '_show_guide'))
+    win.geometry("450x520" if _has_guide else ("450x470" if game else "450x430"))
     win.resizable(False, False)
     win.configure(fg_color=COLORS["bg"])
     try: win.after(60, lambda: (win.lift(), win.attributes("-topmost", True)))
@@ -584,6 +585,14 @@ def show_subscription_info(master, game=None):
                   fg_color="#e0712a", hover_color=_brighten("#e0712a"),
                   corner_radius=10, font=ctk.CTkFont(size=13, weight="bold"),
                   command=lambda: webbrowser.open(PATREON_URL)).pack(pady=(0, 8))
+    # Инструкция к игре доступна прямо отсюда, даже без доступа к игре
+    if _has_guide:
+        ctk.CTkButton(win, text="📖 " + tr('guide'), width=200, height=34,
+                      fg_color="transparent", hover_color="#1a1a2e",
+                      border_width=1, border_color="#33335a",
+                      corner_radius=10, font=ctk.CTkFont(size=12),
+                      text_color="#9999bb",
+                      command=lambda: master._show_guide(game)).pack(pady=(0, 8))
     ctk.CTkButton(win, text="OK", width=120, fg_color=COLORS["btn_play"],
                   hover_color=_brighten(COLORS["btn_play"]), corner_radius=10,
                   command=win.destroy).pack(pady=(0, 14))
@@ -1780,7 +1789,7 @@ class LauncherApp(ctk.CTk):
         """Окно для активации игры, купленной на Patreon (пользователь уже вошёл, но без доступа)."""
         win = ctk.CTkToplevel(self)
         win.title(tr('act_window'))
-        win.geometry("360x230")
+        win.geometry("360x278" if game.get('guide') else "360x230")
         win.resizable(False, False)
         win.configure(fg_color=COLORS["bg"])
         win.protocol("WM_DELETE_WINDOW", win.destroy)
@@ -1819,6 +1828,18 @@ class LauncherApp(ctk.CTk):
             command=lambda g=game: threading.Thread(
                 target=self._do_activate_game, args=(g,), daemon=True).start()
         ).pack()
+
+        # Инструкция доступна даже без доступа к игре
+        if game.get('guide'):
+            ctk.CTkButton(
+                win, text="📖 " + tr('guide'),
+                width=240, height=30,
+                fg_color="transparent", hover_color="#1a1a2e",
+                border_width=1, border_color="#33335a",
+                corner_radius=8, font=ctk.CTkFont(size=11),
+                text_color="#9999bb",
+                command=lambda g=game: self._show_guide(g)
+            ).pack(pady=(8, 0))
 
     def _do_activate_game(self, game):
         """OAuth через /auth/start_game — активирует купленную игру."""
