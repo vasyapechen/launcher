@@ -134,6 +134,8 @@ LANG = {
     "card_installed":"✓ установлена","card_play":"▶   Играть","card_update_tag":"обновление",
     "launching":"Запуск…","changelog_title":"Что нового","searching_games":"Поиск доступных игр…",
     "badge_early":"🌱 Ранний доступ","sub_title":"Подписка","sub_patreon":"Открыть Patreon",
+    "ea_card":"🌱 Для Pro через {days} дн. · {date}",
+    "ea_lock":"🌱 «{name}» выйдет из раннего доступа через {days} дн. — {date}.\nДо этого вход только по Pro Max или по коду.",
     "sub_body":"🎮 Доступ к играм — по подписке на Patreon.\n\n⭐ Pro — все обычные игры.\n👑 Pro Max — ВСЕ игры, включая ранний доступ.\n\n🌱 Ранний доступ: новые игры первые 14 дней доступны только по Pro Max, затем выходят из раннего доступа и открываются и для Pro.\n\nОформить или повысить подписку можно на Patreon.",
     "card_update":"🔄   Обновить","card_download":"⬇   Скачать","card_uninstall":"🗑  Удалить",
     "card_downloading":"Скачивание...","no_games":"Игр не найдено",
@@ -176,6 +178,8 @@ LANG = {
     "card_installed":"✓ installed","card_play":"▶   Play","card_update_tag":"update",
     "launching":"Launching…","changelog_title":"What's new","searching_games":"Searching for games…",
     "badge_early":"🌱 Early access","sub_title":"Subscription","sub_patreon":"Open Patreon",
+    "ea_card":"🌱 Pro in {days}d · {date}",
+    "ea_lock":"🌱 \"{name}\" leaves early access in {days} days — {date}.\nUntil then it's Pro Max (or code) only.",
     "sub_body":"🎮 Game access is via a Patreon subscription.\n\n⭐ Pro — all regular games.\n👑 Pro Max — ALL games, including early access.\n\n🌱 Early access: new games are Pro Max-only for the first 14 days, then leave early access and become available to Pro too.\n\nSubscribe or upgrade on Patreon.",
     "card_update":"🔄   Update","card_download":"⬇   Download","card_uninstall":"🗑  Uninstall",
     "card_downloading":"Downloading...","no_games":"No games found",
@@ -398,6 +402,16 @@ class GameCard(ctk.CTkFrame):
                          text_color="#888899",
                          wraplength=170).pack(pady=(4, 0))
 
+        # Отсчёт до выхода из раннего доступа (виден всем)
+        _ea, _ea_days = early_access_info(self.game)
+        if _ea:
+            _ea_end = early_access_end_date(self.game)
+            _ea_when = _ea_end.strftime('%d.%m') if _ea_end else '—'
+            ctk.CTkLabel(self, text=tr('ea_card', days=max(1, _ea_days), date=_ea_when),
+                         font=ctk.CTkFont(size=10, weight="bold"),
+                         text_color=BADGE_EARLY,
+                         wraplength=170).pack(pady=(3, 0))
+
         # Прогресс-бар (скрыт по умолчанию)
         self._prog_frame = ctk.CTkFrame(self, fg_color="transparent")
         self._prog_frame.pack(pady=(8, 0), padx=16, fill="x")
@@ -448,7 +462,7 @@ class GameCard(ctk.CTkFrame):
         c = ctk.CTkLabel(parent, text=f" {text} ", fg_color=bg, text_color=fg,
                          corner_radius=5, height=14,
                          font=ctk.CTkFont(size=8, weight="bold"))
-        c.bind("<Button-1>", lambda e: show_subscription_info(self))
+        c.bind("<Button-1>", lambda e: show_subscription_info(self, self.game))
         c.configure(cursor="hand2")
         return c
 
@@ -528,10 +542,20 @@ def early_access_info(game):
     today = datetime.date.today()
     return (True, (end - today).days) if today < end else (False, 0)
 
-def show_subscription_info(master):
+def early_access_end_date(game):
+    """Дата выхода из раннего доступа (date) или None."""
+    rel = game.get('released')
+    days = int(game.get('early_access_days', 14) or 14)
+    if not rel: return None
+    try:
+        return datetime.date.fromisoformat(str(rel)[:10]) + datetime.timedelta(days=days)
+    except Exception:
+        return None
+
+def show_subscription_info(master, game=None):
     win = ctk.CTkToplevel(master)
     win.title(tr('sub_title'))
-    win.geometry("450x430")
+    win.geometry("450x470" if game else "450x430")
     win.resizable(False, False)
     win.configure(fg_color=COLORS["bg"])
     try: win.after(60, lambda: (win.lift(), win.attributes("-topmost", True)))
@@ -539,6 +563,18 @@ def show_subscription_info(master):
     ctk.CTkLabel(win, text="💎 " + tr('sub_title'),
                  font=ctk.CTkFont(size=20, weight="bold"),
                  text_color=COLORS["accent"]).pack(pady=(20, 4))
+
+    # Точный срок выхода игры из раннего доступа (вариант 3)
+    if game:
+        _ea, _ea_days = early_access_info(game)
+        if _ea:
+            _end = early_access_end_date(game)
+            _when = _end.strftime('%d.%m.%Y') if _end else '—'
+            ctk.CTkLabel(win, text=tr('ea_lock', name=game.get('name', ''),
+                                      days=max(1, _ea_days), date=_when),
+                         font=ctk.CTkFont(size=12, weight="bold"),
+                         text_color=BADGE_EARLY, justify="left",
+                         wraplength=410).pack(padx=18, pady=(2, 6))
     box = ctk.CTkTextbox(win, width=410, height=270, fg_color="#16162a",
                          font=ctk.CTkFont(size=12), wrap="word")
     box.pack(padx=18, pady=10, fill="both", expand=True)
@@ -1191,7 +1227,7 @@ class LauncherApp(ctk.CTk):
         if not self._has_game_access(game):
             tier = self._auth.get("tier", "")
             if tier in ("pro", "pro_max") or self._auth.get("games"):
-                show_subscription_info(self)        # подписка есть, но уровня не хватает (нужен Pro Max)
+                show_subscription_info(self, game)  # подписка есть, но уровня не хватает (нужен Pro Max)
             else:
                 self._show_activate_screen(game)    # нет подписки/кода — экран активации
             return
