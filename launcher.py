@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import json, os, sys, threading, zipfile, subprocess, webbrowser, uuid, time, ssl, datetime
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import urllib.request as _ur
 import urllib.parse
 
@@ -535,11 +535,11 @@ def early_access_info(game):
     days = int(game.get('early_access_days', 14) or 14)
     if not rel: return (False, 0)
     try:
-        d = datetime.date.fromisoformat(str(rel)[:10])
+        d = date.fromisoformat(str(rel)[:10])
     except Exception:
         return (False, 0)
-    end = d + datetime.timedelta(days=days)
-    today = datetime.date.today()
+    end = d + timedelta(days=days)
+    today = date.today()
     return (True, (end - today).days) if today < end else (False, 0)
 
 def early_access_end_date(game):
@@ -548,7 +548,7 @@ def early_access_end_date(game):
     days = int(game.get('early_access_days', 14) or 14)
     if not rel: return None
     try:
-        return datetime.date.fromisoformat(str(rel)[:10]) + datetime.timedelta(days=days)
+        return date.fromisoformat(str(rel)[:10]) + timedelta(days=days)
     except Exception:
         return None
 
