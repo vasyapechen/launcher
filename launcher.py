@@ -38,7 +38,7 @@ except Exception:
     pass
 
 # ── Версия и URLs ────────────────────────────────────────
-LAUNCHER_VERSION = "1.1.2"
+LAUNCHER_VERSION = "1.1.3"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
@@ -1728,9 +1728,9 @@ class LauncherApp(ctk.CTk):
     def _do_redeem_code(self):
         code = self._code_entry.get().strip().upper()
         if not code:
-            self._set_login_status(tr('code_enter_one'))
+            self._set_code_status(tr('code_enter_one'))
             return
-        self._set_login_status(tr('code_verifying'))
+        self._set_code_status(tr('code_verifying'))
         try:
             payload = json.dumps({
                 "code": code,
@@ -1750,10 +1750,10 @@ class LauncherApp(ctk.CTk):
                 try:
                     result = json.loads(e.read())  # type: ignore
                 except Exception:
-                    self._set_login_status(tr('conn_error'))
+                    self._set_code_status(tr('conn_error'))
                     return
         except Exception:
-            self._set_login_status(tr('conn_error'))
+            self._set_code_status(tr('conn_error'))
             return
 
         if not result.get("ok"):
@@ -1763,7 +1763,7 @@ class LauncherApp(ctk.CTk):
                 "code_expired":       tr('code_expired_msg'),
                 "code_limit_reached": tr('code_limit'),
             }
-            self._set_login_status(msgs.get(err, f"❌ {err}"))
+            self._set_code_status(msgs.get(err, f"❌ {err}"))
             return
 
         if self._logged_in and self._auth.get("tier") in ("pro", "pro_max"):
@@ -1787,8 +1787,12 @@ class LauncherApp(ctk.CTk):
             }
             save_auth(self._auth)
 
-        if self._login_win:
-            self._login_win.after(0, self._login_win.destroy)
+        for _attr in ('_login_win', '_activate_win'):
+            _w = getattr(self, _attr, None)
+            if _w:
+                try: _w.after(0, _w.destroy)
+                except Exception: pass
+                setattr(self, _attr, None)
 
         self._after_login()
         self._run_pending_action()
@@ -1797,11 +1801,12 @@ class LauncherApp(ctk.CTk):
         """Окно для активации игры, купленной на Patreon (пользователь уже вошёл, но без доступа)."""
         win = ctk.CTkToplevel(self)
         win.title(tr('act_window'))
-        win.geometry("360x278" if game.get('guide') else "360x230")
+        win.geometry("360x346" if game.get('guide') else "360x298")
         win.resizable(False, False)
         win.configure(fg_color=COLORS["bg"])
         win.protocol("WM_DELETE_WINDOW", win.destroy)
         self._activate_win = win
+        self._login_win = None      # код-редем будет целиться в это окно
         self._bring_to_front(win)
 
         ctk.CTkLabel(win, text=f"🔒  {game['name']}",
@@ -1836,6 +1841,31 @@ class LauncherApp(ctk.CTk):
             command=lambda g=game: threading.Thread(
                 target=self._do_activate_game, args=(g,), daemon=True).start()
         ).pack()
+
+        # ── Ввести код доступа (кнопка ⇄ поле) ──
+        self._code_section = ctk.CTkFrame(win, fg_color="transparent")
+        self._code_section.pack(pady=(8, 0))
+        self._code_toggle_btn = ctk.CTkButton(
+            self._code_section, text=tr('enter_code'),
+            width=240, height=34, fg_color="transparent", hover_color="#1a1a2e",
+            border_width=1, border_color="#444466", corner_radius=10,
+            font=ctk.CTkFont(size=12), text_color="#aaaacc",
+            command=self._show_code_entry)
+        self._code_toggle_btn.pack()
+        self._code_entry_frame = ctk.CTkFrame(self._code_section, fg_color="transparent")
+        self._code_entry = ctk.CTkEntry(
+            self._code_entry_frame, placeholder_text="GAME-XXXXXX",
+            width=190, height=36, font=ctk.CTkFont(size=13, family="Courier"), justify="center")
+        self._code_entry.grid(row=0, column=0, padx=(0, 8))
+        self._add_entry_context_menu(self._code_entry)
+        self._code_entry.bind("<Return>", lambda e: threading.Thread(
+            target=self._do_redeem_code, daemon=True).start())
+        ctk.CTkButton(
+            self._code_entry_frame, text="→", width=46, height=36,
+            fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
+            corner_radius=8, font=ctk.CTkFont(size=18, weight="bold"),
+            command=lambda: threading.Thread(target=self._do_redeem_code, daemon=True).start()
+        ).grid(row=0, column=1)
 
         # Инструкция доступна даже без доступа к игре
         if game.get('guide'):
@@ -1943,6 +1973,15 @@ class LauncherApp(ctk.CTk):
     def _set_login_status(self, text):
         if self._login_win:
             self._login_win.after(0, lambda: self._login_status.configure(text=text))
+
+    def _set_code_status(self, text):
+        """Статус ввода кода в активном окне (вход или экран активации)."""
+        w = getattr(self, '_login_win', None); lbl = getattr(self, '_login_status', None)
+        if not w:
+            w = getattr(self, '_activate_win', None); lbl = getattr(self, '_activate_status', None)
+        if w and lbl:
+            try: w.after(0, lambda: lbl.configure(text=text))
+            except Exception: pass
 
     # ── Переключение языка ───────────────────────────────
     def _toggle_lang(self):
