@@ -1069,7 +1069,7 @@ class LauncherApp(ctk.CTk):
     def _show_my_codes(self):
         win = ctk.CTkToplevel(self)
         win.title(tr('my_access'))
-        win.geometry("470x480")
+        win.geometry("470x548")
         win.configure(fg_color=COLORS["bg"])
         win.protocol("WM_DELETE_WINDOW", win.destroy)
         self._bring_to_front(win)
@@ -1080,6 +1080,35 @@ class LauncherApp(ctk.CTk):
         ctk.CTkLabel(win, text=tr('ma_subtitle'),
                      font=ctk.CTkFont(size=11),
                      text_color=COLORS["gray"]).pack()
+
+        # ── Ввести код доступа (внизу окна) ──
+        code_box = ctk.CTkFrame(win, fg_color="transparent")
+        code_box.pack(side="bottom", pady=(0, 14))
+        ma_status = ctk.CTkLabel(code_box, text="", font=ctk.CTkFont(size=11), text_color=COLORS["orange"])
+        ma_status.pack()
+        self._code_win = win; self._code_status_lbl = ma_status
+        self._code_section = ctk.CTkFrame(code_box, fg_color="transparent")
+        self._code_section.pack(pady=(4, 0))
+        self._code_toggle_btn = ctk.CTkButton(
+            self._code_section, text=tr('enter_code'),
+            width=240, height=34, fg_color="transparent", hover_color="#1a1a2e",
+            border_width=1, border_color="#444466", corner_radius=10,
+            font=ctk.CTkFont(size=12), text_color="#aaaacc", command=self._show_code_entry)
+        self._code_toggle_btn.pack()
+        self._code_entry_frame = ctk.CTkFrame(self._code_section, fg_color="transparent")
+        self._code_entry = ctk.CTkEntry(
+            self._code_entry_frame, placeholder_text="GAME-XXXXXX",
+            width=190, height=36, font=ctk.CTkFont(size=13, family="Courier"), justify="center")
+        self._code_entry.grid(row=0, column=0, padx=(0, 8))
+        self._add_entry_context_menu(self._code_entry)
+        self._code_entry.bind("<Return>", lambda e: threading.Thread(
+            target=self._do_redeem_code, daemon=True).start())
+        ctk.CTkButton(
+            self._code_entry_frame, text="→", width=46, height=36,
+            fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
+            corner_radius=8, font=ctk.CTkFont(size=18, weight="bold"),
+            command=lambda: threading.Thread(target=self._do_redeem_code, daemon=True).start()
+        ).grid(row=0, column=1)
 
         body = ctk.CTkScrollableFrame(win, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=14, pady=12)
@@ -1500,6 +1529,7 @@ class LauncherApp(ctk.CTk):
 
         # Секция «Ввести код» — контейнер держит позицию в layout,
         # внутри переключаем кнопку <-> поле ввода (без хрупкого after)
+        self._code_win = self._login_win; self._code_status_lbl = self._login_status
         self._code_section = ctk.CTkFrame(self._login_win, fg_color="transparent")
         self._code_section.pack(pady=(6, 0))
 
@@ -1787,12 +1817,11 @@ class LauncherApp(ctk.CTk):
             }
             save_auth(self._auth)
 
-        for _attr in ('_login_win', '_activate_win'):
-            _w = getattr(self, _attr, None)
-            if _w:
-                try: _w.after(0, _w.destroy)
-                except Exception: pass
-                setattr(self, _attr, None)
+        w = getattr(self, '_code_win', None)
+        if w:
+            try: w.after(0, w.destroy)
+            except Exception: pass
+        self._code_win = None; self._login_win = None; self._activate_win = None
 
         self._after_login()
         self._run_pending_action()
@@ -1843,6 +1872,7 @@ class LauncherApp(ctk.CTk):
         ).pack()
 
         # ── Ввести код доступа (кнопка ⇄ поле) ──
+        self._code_win = win; self._code_status_lbl = self._activate_status
         self._code_section = ctk.CTkFrame(win, fg_color="transparent")
         self._code_section.pack(pady=(8, 0))
         self._code_toggle_btn = ctk.CTkButton(
@@ -1975,10 +2005,8 @@ class LauncherApp(ctk.CTk):
             self._login_win.after(0, lambda: self._login_status.configure(text=text))
 
     def _set_code_status(self, text):
-        """Статус ввода кода в активном окне (вход или экран активации)."""
-        w = getattr(self, '_login_win', None); lbl = getattr(self, '_login_status', None)
-        if not w:
-            w = getattr(self, '_activate_win', None); lbl = getattr(self, '_activate_status', None)
+        """Статус ввода кода в активной форме (вход / активация / мои доступы)."""
+        w = getattr(self, '_code_win', None); lbl = getattr(self, '_code_status_lbl', None)
         if w and lbl:
             try: w.after(0, lambda: lbl.configure(text=text))
             except Exception: pass
