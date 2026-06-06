@@ -153,7 +153,7 @@ LANG = {
     "ma_sub_active":"Подписка активна","ma_sub_inactive":"Подписка неактивна","ma_forever":"Доступ навсегда",
     "ma_all_games":"Все игры","ma_until":"{code} · до {when} (≈{days} дн.)",
     "ma_expired":"{code} · истёк","ma_permanent":"{code} · бессрочный",
-    "tier_basic":"Basic","tier_pro":"Pro","tier_pro_max":"Pro Max","tier_buyer":"Покупатель","tier_guest":"Гость",
+    "tier_basic":"Basic","tier_pro":"Pro","tier_pro_max":"Pro Max","tier_buyer":"Покупатель","tier_guest":"Гость","tier_none":"Без подписки",
     "del_title":"🗑  Удалить {name}?","del_body":"Файлы игры будут удалены.\nЕё можно будет скачать снова.",
     "del_cancel":"Отмена","del_confirm":"🗑  Удалить",
     "login_window":"Вход","login_sub":"Нужна подписка Patreon","login_signin":"🔑  Войти через Patreon",
@@ -200,7 +200,7 @@ LANG = {
     "ma_sub_active":"Subscription active","ma_sub_inactive":"Subscription inactive","ma_forever":"Permanent access",
     "ma_all_games":"All games","ma_until":"{code} · until {when} (≈{days} d.)",
     "ma_expired":"{code} · expired","ma_permanent":"{code} · permanent",
-    "tier_basic":"Basic","tier_pro":"Pro","tier_pro_max":"Pro Max","tier_buyer":"Buyer","tier_guest":"Guest",
+    "tier_basic":"Basic","tier_pro":"Pro","tier_pro_max":"Pro Max","tier_buyer":"Buyer","tier_guest":"Guest","tier_none":"No subscription",
     "del_title":"🗑  Delete {name}?","del_body":"Game files will be deleted.\nYou can download it again.",
     "del_cancel":"Cancel","del_confirm":"🗑  Delete",
     "login_window":"Sign in","login_sub":"Patreon subscription required","login_signin":"🔑  Sign in with Patreon",
@@ -798,7 +798,8 @@ class LauncherApp(ctk.CTk):
     # ── Аккаунт: отображение, выход, быстрое обновление подписки ──
     def _tier_label(self, tier):
         return {"basic": tr('tier_basic'), "pro": tr('tier_pro'), "pro_max": tr('tier_pro_max'),
-                "buyer": tr('tier_buyer'), "guest": tr('tier_guest')}.get(tier, tier or "")
+                "buyer": tr('tier_buyer'), "guest": tr('tier_guest'),
+                "none": tr('tier_none')}.get(tier, tier or "")
 
     def _update_account_ui(self):
         lbl = getattr(self, 'account_lbl', None)
