@@ -675,18 +675,8 @@ class LauncherApp(ctk.CTk):
         )
         self.mycodes_btn.pack(side="right", padx=(8, 4))
 
-        # Выход / смена аккаунта и быстрое обновление подписки (показываются после входа)
-        self.logout_btn = ctk.CTkButton(
-            hdr, text=tr('btn_logout'), width=92, height=32,
-            fg_color="#3a2a2a", hover_color="#4a3434",
-            corner_radius=8, font=ctk.CTkFont(size=12),
-            command=self._logout)
-        self.refresh_sub_btn = ctk.CTkButton(
-            hdr, text=tr('btn_refresh_sub'), width=160, height=32,
-            fg_color="#22335a", hover_color="#2e447a",
-            corner_radius=8, font=ctk.CTkFont(size=12),
-            command=lambda: self._refresh_subscription())
-        # Кнопка входа — видна, когда вход не выполнен
+        # Кнопка входа — видна, когда вход не выполнен.
+        # Управление аккаунтом (Выйти / Обновить подписку) — в окне «Мои доступы».
         self.login_btn = ctk.CTkButton(
             hdr, text=tr('btn_login'), width=110, height=32,
             fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
@@ -814,30 +804,17 @@ class LauncherApp(ctk.CTk):
         if lbl is None:
             return
         logged = self._logged_in and self._auth.get("token")
-        def _hide(*names):
-            for b in names:
-                w = getattr(self, b, None)
-                if w:
-                    try: w.pack_forget()
-                    except Exception: pass
         if logged:
             name = self._auth.get("name") or "—"
             tier = self._tier_label(self._auth.get("tier", ""))
             txt  = tr('account_as', name=name) + (f" · {tier}" if tier else "")
             lbl.configure(text=txt, text_color=COLORS["accent"])
-            _hide('login_btn')
-            try:
-                self.refresh_sub_btn.pack(side="right", padx=4)
-                self.logout_btn.pack(side="right", padx=4)
-            except Exception:
-                pass
+            try: self.login_btn.pack_forget()
+            except Exception: pass
         else:
             lbl.configure(text=tr('not_logged_in'), text_color=COLORS["gray"])
-            _hide('refresh_sub_btn', 'logout_btn')
-            try:
-                self.login_btn.pack(side="right", padx=4)
-            except Exception:
-                pass
+            try: self.login_btn.pack(side="right", padx=4)
+            except Exception: pass
 
     def _logout(self):
         clear_auth()
@@ -1184,6 +1161,32 @@ class LauncherApp(ctk.CTk):
         ctk.CTkLabel(win, text=tr('ma_subtitle'),
                      font=ctk.CTkFont(size=11),
                      text_color=COLORS["gray"]).pack()
+
+        # ── Текущий аккаунт + управление ──
+        acc_box = ctk.CTkFrame(win, fg_color=COLORS["card"], corner_radius=10)
+        acc_box.pack(fill="x", padx=14, pady=(10, 0))
+        if self._logged_in and self._auth.get("token"):
+            nm  = self._auth.get("name") or "—"
+            tl  = self._tier_label(self._auth.get("tier", ""))
+            ctk.CTkLabel(acc_box, text=tr('account_as', name=nm) + (f" · {tl}" if tl else ""),
+                         font=ctk.CTkFont(size=13, weight="bold"),
+                         text_color="#e8e8f8").pack(anchor="w", padx=12, pady=(8, 4))
+            ab = ctk.CTkFrame(acc_box, fg_color="transparent"); ab.pack(anchor="w", padx=10, pady=(0, 8))
+            ctk.CTkButton(ab, text=tr('btn_refresh_sub'), width=180, height=30,
+                          fg_color="#22335a", hover_color="#2e447a", corner_radius=8,
+                          font=ctk.CTkFont(size=12),
+                          command=lambda: self._refresh_subscription()).pack(side="left", padx=(2, 6))
+            ctk.CTkButton(ab, text=tr('btn_switch_acc'), width=160, height=30,
+                          fg_color="#3a2a2a", hover_color="#4a3434", corner_radius=8,
+                          font=ctk.CTkFont(size=12),
+                          command=lambda: (win.destroy(), self._logout())).pack(side="left", padx=2)
+        else:
+            ctk.CTkLabel(acc_box, text=tr('not_logged_in'),
+                         font=ctk.CTkFont(size=13), text_color=COLORS["gray"]).pack(anchor="w", padx=12, pady=(8, 4))
+            ctk.CTkButton(acc_box, text=tr('btn_login'), width=180, height=30,
+                          fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
+                          corner_radius=8, font=ctk.CTkFont(size=12, weight="bold"), text_color="white",
+                          command=lambda: (win.destroy(), self._show_login_screen())).pack(anchor="w", padx=10, pady=(0, 8))
 
         # ── Ввести код доступа (внизу окна) ──
         code_box = ctk.CTkFrame(win, fg_color="transparent")
