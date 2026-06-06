@@ -122,9 +122,9 @@ GAMES_DIR.mkdir(parents=True, exist_ok=True)
 LANG = {
   "ru": {
     "my_access":"🎟 Мои доступы","games_folder":"Папка игр",
-    "account_as":"👤 {name}","btn_logout":"🚪 Выйти","btn_switch_acc":"🔁 Сменить аккаунт",
+    "account_as":"👤 {name}","btn_login":"🔑 Войти","btn_logout":"🚪 Выйти","btn_switch_acc":"🔁 Сменить аккаунт",
     "btn_refresh_sub":"🔄 Обновить подписку","sub_refreshed":"Подписка обновлена: {tier}",
-    "logged_out":"Вы вышли из аккаунта","not_logged_in":"Не выполнен вход",
+    "logged_out":"Вы вышли из аккаунта","not_logged_in":"Вход не выполнен",
     "guide":"📖 Инструкция","guide_window":"Инструкция","close":"Закрыть",
     "folder_changed":"Папка изменена","checking_auth":"Проверка входа...",
     "sign_in_to_play":"Войдите, чтобы играть","welcome":"Добро пожаловать, {name}!",
@@ -169,7 +169,7 @@ LANG = {
   },
   "en": {
     "my_access":"🎟 My access","games_folder":"Games folder",
-    "account_as":"👤 {name}","btn_logout":"🚪 Log out","btn_switch_acc":"🔁 Switch account",
+    "account_as":"👤 {name}","btn_login":"🔑 Sign in","btn_logout":"🚪 Log out","btn_switch_acc":"🔁 Switch account",
     "btn_refresh_sub":"🔄 Refresh subscription","sub_refreshed":"Subscription updated: {tier}",
     "logged_out":"Logged out","not_logged_in":"Not signed in",
     "guide":"📖 Guide","guide_window":"Guide","close":"Close",
@@ -686,6 +686,12 @@ class LauncherApp(ctk.CTk):
             fg_color="#22335a", hover_color="#2e447a",
             corner_radius=8, font=ctk.CTkFont(size=12),
             command=lambda: self._refresh_subscription())
+        # Кнопка входа — видна, когда вход не выполнен
+        self.login_btn = ctk.CTkButton(
+            hdr, text=tr('btn_login'), width=110, height=32,
+            fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
+            corner_radius=8, font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="white", command=lambda: self._show_login_screen())
 
         self.folder_btn = ctk.CTkButton(
             hdr, text="📁", width=38, height=32,
@@ -808,11 +814,18 @@ class LauncherApp(ctk.CTk):
         if lbl is None:
             return
         logged = self._logged_in and self._auth.get("token")
+        def _hide(*names):
+            for b in names:
+                w = getattr(self, b, None)
+                if w:
+                    try: w.pack_forget()
+                    except Exception: pass
         if logged:
             name = self._auth.get("name") or "—"
             tier = self._tier_label(self._auth.get("tier", ""))
             txt  = tr('account_as', name=name) + (f" · {tier}" if tier else "")
             lbl.configure(text=txt, text_color=COLORS["accent"])
+            _hide('login_btn')
             try:
                 self.refresh_sub_btn.pack(side="right", padx=4)
                 self.logout_btn.pack(side="right", padx=4)
@@ -820,11 +833,11 @@ class LauncherApp(ctk.CTk):
                 pass
         else:
             lbl.configure(text=tr('not_logged_in'), text_color=COLORS["gray"])
-            for b in ('refresh_sub_btn', 'logout_btn'):
-                w = getattr(self, b, None)
-                if w:
-                    try: w.pack_forget()
-                    except Exception: pass
+            _hide('refresh_sub_btn', 'logout_btn')
+            try:
+                self.login_btn.pack(side="right", padx=4)
+            except Exception:
+                pass
 
     def _logout(self):
         clear_auth()
