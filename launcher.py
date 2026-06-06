@@ -764,6 +764,7 @@ class LauncherApp(ctk.CTk):
             if result.get("ok"):
                 self._auth["last_verify"] = time.time()
                 self._auth["name"]  = result.get("name", "")
+                self._auth["email"] = result.get("email", self._auth.get("email", ""))
                 self._auth["games"] = result.get("games", [])
                 if result.get("tier"): self._auth["tier"] = result.get("tier")
                 save_auth(self._auth)
@@ -839,6 +840,7 @@ class LauncherApp(ctk.CTk):
             if result.get("ok"):
                 if result.get("tier"): self._auth["tier"] = result.get("tier")
                 self._auth["name"]  = result.get("name", self._auth.get("name", ""))
+                self._auth["email"] = result.get("email", self._auth.get("email", ""))
                 self._auth["games"] = result.get("games", self._auth.get("games", []))
                 self._auth["last_verify"] = time.time()
                 save_auth(self._auth)
@@ -1167,10 +1169,14 @@ class LauncherApp(ctk.CTk):
         acc_box.pack(fill="x", padx=14, pady=(10, 0))
         if self._logged_in and self._auth.get("token"):
             nm  = self._auth.get("name") or "—"
+            em  = self._auth.get("email") or ""
             tl  = self._tier_label(self._auth.get("tier", ""))
             ctk.CTkLabel(acc_box, text=tr('account_as', name=nm) + (f" · {tl}" if tl else ""),
                          font=ctk.CTkFont(size=13, weight="bold"),
-                         text_color="#e8e8f8").pack(anchor="w", padx=12, pady=(8, 4))
+                         text_color="#e8e8f8").pack(anchor="w", padx=12, pady=(8, 4 if em else 4))
+            if em:
+                ctk.CTkLabel(acc_box, text=f"✉ {em}",
+                             font=ctk.CTkFont(size=11), text_color=COLORS["gray"]).pack(anchor="w", padx=12, pady=(0, 2))
             ab = ctk.CTkFrame(acc_box, fg_color="transparent"); ab.pack(anchor="w", padx=10, pady=(0, 8))
             ctk.CTkButton(ab, text=tr('btn_refresh_sub'), width=180, height=30,
                           fg_color="#22335a", hover_color="#2e447a", corner_radius=8,
@@ -1808,6 +1814,7 @@ class LauncherApp(ctk.CTk):
                 result_holder[0] = {
                     "token": params.get("token", [""])[0],
                     "name":  params.get("name",  [""])[0],
+                    "email": params.get("email", [""])[0],
                     "tier":  params.get("tier",  [""])[0],
                     "games": params.get("games", [""])[0],
                 }
@@ -1841,6 +1848,7 @@ class LauncherApp(ctk.CTk):
         self._auth = {
             "token":       r["token"],
             "name":        r["name"],
+            "email":       r.get("email", ""),
             "tier":        r["tier"],
             "games":       [g for g in games_str.split(",") if g],
             "last_verify": time.time(),
@@ -2043,6 +2051,7 @@ class LauncherApp(ctk.CTk):
                 result_holder[0] = {
                     "token": params.get("token", [""])[0],
                     "name":  params.get("name",  [""])[0],
+                    "email": params.get("email", [""])[0],
                     "tier":  params.get("tier",  [""])[0],
                     "games": params.get("games", [""])[0],
                 }
