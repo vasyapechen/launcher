@@ -122,6 +122,9 @@ GAMES_DIR.mkdir(parents=True, exist_ok=True)
 LANG = {
   "ru": {
     "my_access":"🎟 Мои доступы","games_folder":"Папка игр",
+    "account_as":"👤 {name}","btn_logout":"🚪 Выйти","btn_switch_acc":"🔁 Сменить аккаунт",
+    "btn_refresh_sub":"🔄 Обновить подписку","sub_refreshed":"Подписка обновлена: {tier}",
+    "logged_out":"Вы вышли из аккаунта","not_logged_in":"Не выполнен вход",
     "guide":"📖 Инструкция","guide_window":"Инструкция","close":"Закрыть",
     "folder_changed":"Папка изменена","checking_auth":"Проверка входа...",
     "sign_in_to_play":"Войдите, чтобы играть","welcome":"Добро пожаловать, {name}!",
@@ -150,7 +153,7 @@ LANG = {
     "ma_sub_active":"Подписка активна","ma_sub_inactive":"Подписка неактивна","ma_forever":"Доступ навсегда",
     "ma_all_games":"Все игры","ma_until":"{code} · до {when} (≈{days} дн.)",
     "ma_expired":"{code} · истёк","ma_permanent":"{code} · бессрочный",
-    "tier_basic":"Basic","tier_pro":"Pro","tier_buyer":"Покупатель","tier_guest":"Гость",
+    "tier_basic":"Basic","tier_pro":"Pro","tier_pro_max":"Pro Max","tier_buyer":"Покупатель","tier_guest":"Гость",
     "del_title":"🗑  Удалить {name}?","del_body":"Файлы игры будут удалены.\nЕё можно будет скачать снова.",
     "del_cancel":"Отмена","del_confirm":"🗑  Удалить",
     "login_window":"Вход","login_sub":"Нужна подписка Patreon","login_signin":"🔑  Войти через Patreon",
@@ -166,6 +169,9 @@ LANG = {
   },
   "en": {
     "my_access":"🎟 My access","games_folder":"Games folder",
+    "account_as":"👤 {name}","btn_logout":"🚪 Log out","btn_switch_acc":"🔁 Switch account",
+    "btn_refresh_sub":"🔄 Refresh subscription","sub_refreshed":"Subscription updated: {tier}",
+    "logged_out":"Logged out","not_logged_in":"Not signed in",
     "guide":"📖 Guide","guide_window":"Guide","close":"Close",
     "folder_changed":"Folder changed","checking_auth":"Checking auth...",
     "sign_in_to_play":"Sign in to play","welcome":"Welcome, {name}!",
@@ -194,7 +200,7 @@ LANG = {
     "ma_sub_active":"Subscription active","ma_sub_inactive":"Subscription inactive","ma_forever":"Permanent access",
     "ma_all_games":"All games","ma_until":"{code} · until {when} (≈{days} d.)",
     "ma_expired":"{code} · expired","ma_permanent":"{code} · permanent",
-    "tier_basic":"Basic","tier_pro":"Pro","tier_buyer":"Buyer","tier_guest":"Guest",
+    "tier_basic":"Basic","tier_pro":"Pro","tier_pro_max":"Pro Max","tier_buyer":"Buyer","tier_guest":"Guest",
     "del_title":"🗑  Delete {name}?","del_body":"Game files will be deleted.\nYou can download it again.",
     "del_cancel":"Cancel","del_confirm":"🗑  Delete",
     "login_window":"Sign in","login_sub":"Patreon subscription required","login_signin":"🔑  Sign in with Patreon",
@@ -639,6 +645,12 @@ class LauncherApp(ctk.CTk):
                      font=ctk.CTkFont(size=22, weight="bold"),
                      text_color=COLORS["accent"]).pack(side="left", padx=20)
 
+        # Текущий аккаунт (обновляется в _update_account_ui)
+        self.account_lbl = ctk.CTkLabel(hdr, text="",
+                     font=ctk.CTkFont(size=12),
+                     text_color=COLORS["gray"])
+        self.account_lbl.pack(side="left", padx=(0, 8))
+
         self.lang_btn = ctk.CTkButton(
             hdr, text=f"🌐 {_lang.upper()}", width=58, height=32,
             fg_color="transparent", hover_color="#222244",
@@ -662,6 +674,18 @@ class LauncherApp(ctk.CTk):
             command=self._show_my_codes
         )
         self.mycodes_btn.pack(side="right", padx=(8, 4))
+
+        # Выход / смена аккаунта и быстрое обновление подписки (показываются после входа)
+        self.logout_btn = ctk.CTkButton(
+            hdr, text=tr('btn_logout'), width=92, height=32,
+            fg_color="#3a2a2a", hover_color="#4a3434",
+            corner_radius=8, font=ctk.CTkFont(size=12),
+            command=self._logout)
+        self.refresh_sub_btn = ctk.CTkButton(
+            hdr, text=tr('btn_refresh_sub'), width=160, height=32,
+            fg_color="#22335a", hover_color="#2e447a",
+            corner_radius=8, font=ctk.CTkFont(size=12),
+            command=lambda: self._refresh_subscription())
 
         self.folder_btn = ctk.CTkButton(
             hdr, text="📁", width=38, height=32,
@@ -695,6 +719,8 @@ class LauncherApp(ctk.CTk):
         ctk.CTkLabel(ftr, text=f"vasya_pechen launcher v{LAUNCHER_VERSION}",
                      font=ctk.CTkFont(size=10),
                      text_color="#333355").pack(side="left", padx=12)
+
+        self._update_account_ui()
 
     # ── Выбор папки ─────────────────────────────────────
     def _choose_games_dir(self):
@@ -768,8 +794,73 @@ class LauncherApp(ctk.CTk):
             self._auth["device_games"] = dg
             save_auth(self._auth)
         name = self._auth.get("name", "")
+        self.after(0, self._update_account_ui)
         self._status('welcome', name=name) if name else self._status(None)
         self._load_catalog()
+
+    # ── Аккаунт: отображение, выход, быстрое обновление подписки ──
+    def _tier_label(self, tier):
+        return {"basic": tr('tier_basic'), "pro": tr('tier_pro'), "pro_max": tr('tier_pro_max'),
+                "buyer": tr('tier_buyer'), "guest": tr('tier_guest')}.get(tier, tier or "")
+
+    def _update_account_ui(self):
+        lbl = getattr(self, 'account_lbl', None)
+        if lbl is None:
+            return
+        logged = self._logged_in and self._auth.get("token")
+        if logged:
+            name = self._auth.get("name") or "—"
+            tier = self._tier_label(self._auth.get("tier", ""))
+            txt  = tr('account_as', name=name) + (f" · {tier}" if tier else "")
+            lbl.configure(text=txt, text_color=COLORS["accent"])
+            try:
+                self.refresh_sub_btn.pack(side="right", padx=4)
+                self.logout_btn.pack(side="right", padx=4)
+            except Exception:
+                pass
+        else:
+            lbl.configure(text=tr('not_logged_in'), text_color=COLORS["gray"])
+            for b in ('refresh_sub_btn', 'logout_btn'):
+                w = getattr(self, b, None)
+                if w:
+                    try: w.pack_forget()
+                    except Exception: pass
+
+    def _logout(self):
+        clear_auth()
+        self._auth = {}
+        self._logged_in = False
+        self._catalog = self._catalog or []
+        self._update_account_ui()
+        try: self._render()
+        except Exception: pass
+        self._status('logged_out')
+        self._show_login_screen()
+
+    def _refresh_subscription(self):
+        """Быстрая проверка актуальной подписки без перелогина (перечитывает тариф с сервера)."""
+        def work():
+            token = self._auth.get("token")
+            if not token:
+                self.after(0, self._show_login_screen)
+                return
+            self.after(0, lambda: self._status('checking_auth'))
+            result = verify_token(token)
+            if result.get("ok"):
+                if result.get("tier"): self._auth["tier"] = result.get("tier")
+                self._auth["name"]  = result.get("name", self._auth.get("name", ""))
+                self._auth["games"] = result.get("games", self._auth.get("games", []))
+                self._auth["last_verify"] = time.time()
+                save_auth(self._auth)
+                self.after(0, self._update_account_ui)
+                self.after(0, self._render)
+                self.after(0, lambda: self._status('sub_refreshed',
+                                                   tier=self._tier_label(self._auth.get("tier", ""))))
+            elif result.get("auth_failed"):
+                self.after(0, self._logout)
+            else:
+                self.after(0, lambda: self._status('no_connection'))
+        threading.Thread(target=work, daemon=True).start()
 
     def _fetch_device_codes(self):
         """Игры, выданные действующими кодами на ЭТОМ устройстве. None — если сеть недоступна."""
@@ -1152,13 +1243,13 @@ class LauncherApp(ctk.CTk):
             now = time.time()
             names = {g['id']: g['name'] for g in (self._catalog or [])}
             gname = lambda gid: (names.get(gid, gid) if gid else tr('ma_all_games'))
-            tier_names = {"basic": tr('tier_basic'), "pro": tr('tier_pro'),
+            tier_names = {"basic": tr('tier_basic'), "pro": tr('tier_pro'), "pro_max": tr('tier_pro_max'),
                           "buyer": tr('tier_buyer'), "guest": tr('tier_guest')}
             shown = False
 
             # 1) Подписка Patreon
             acc = data.get("account")
-            if acc and acc.get("tier") in ("basic", "pro"):
+            if acc and acc.get("tier") in ("basic", "pro", "pro_max"):
                 shown = True
                 section(tr('ma_sec_sub'))
                 col = COLORS["green"] if acc.get("active") else COLORS["gray"]
