@@ -3,10 +3,10 @@
     {
       "id": "flagrace",
       "name": "Flag Race",
-      "version": "1.22",
+      "version": "1.21",
       "description": "Гонка флагов стран мира",
-      "size_mb": 24,
-      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.22/FlagRace.zip",
+      "size_mb": 30,
+      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.21/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": [
         "basic",
@@ -16,8 +16,8 @@
       "early_access_days": 14,
       "is_new": true,
       "changelog": {
-        "ru": "🔥 Бафф «огонь» теперь удваивает урон в бою (вместо скорострельности).\n✨ Ярче свечение усилений на всех моделях (танк/НЛО/самолёт).\n🛠 Технические улучшения и оптимизации.",
-        "en": "🔥 The 'fire' buff now doubles combat damage (instead of fire rate).\n✨ Brighter buff glow on all models (tank/UFO/plane).\n🛠 Technical improvements and optimizations."
+        "ru": "🌿 Новый стиль «Поляна» — зелёная поляна с колышущейся травой, деревьями и кустами вдоль трассы (асфальт обычного цвета).\n💥 Тряска экрана при попадании снаряда + ползунок её силы в настройках.\n🎯 Снаряды летят с постоянной скоростью (не зависит от дистанции) и заметно быстрее, а урон засчитывается точно в момент попадания.",
+        "en": "🌿 New 'Meadow' style — a green meadow with swaying grass, trees and bushes along the track (plain asphalt road).\n💥 Screen shake when a shell hits + a strength slider in settings.\n🎯 Shells now travel at a constant speed (independent of distance) and noticeably faster, and damage is applied exactly on impact."
       },
       "changelogs": {
         "1.21": {
@@ -51,10 +51,6 @@
         "1.20": {
           "ru": "🌀 Новый стиль «Мираж» — процедурная тема. По сиду генерируются уникальная палитра, объекты (сферы/кристаллы/кольца/искры/штрихи…), динамика (орбиты/поток/маятник/спираль…) и фон арены (11 узоров). Кнопка «🎲 Новый мираж» — бесконечные неповторимые варианты.",
           "en": "🌀 New 'Mirage' style — a procedural theme. Each seed generates a unique palette, objects (orbs/shards/rings/sparks/streaks…), motion (orbit/stream/sway/spiral…) and arena background (11 patterns). The '🎲 New mirage' button gives endless unique looks."
-        },
-        "1.22": {
-          "ru": "🔥 Бафф «огонь» теперь удваивает урон в бою (вместо скорострельности).\n✨ Ярче свечение усилений на всех моделях (танк/НЛО/самолёт).\n🛠 Технические улучшения и оптимизации.",
-          "en": "🔥 The 'fire' buff now doubles combat damage (instead of fire rate).\n✨ Brighter buff glow on all models (tank/UFO/plane).\n🛠 Technical improvements and optimizations."
         }
       },
       "guide": {
