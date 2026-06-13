@@ -1,6 +1,6 @@
 {
-  "version": "1.1.4",
+  "version": "1.1.5",
   "mandatory": false,
   "download_url": "https://github.com/vasyapechen/launcher/releases/latest/download/Launcher.zip",
-  "changelog": "Технические улучшения системы загрузки игр."
+  "changelog": "Анимация кнопки при скачивании — мгновенный отклик на нажатие."
 }
