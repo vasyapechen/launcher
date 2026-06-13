@@ -1461,6 +1461,21 @@ class LauncherApp(ctk.CTk):
         old_ver   = self._state.get(gid, {}).get('version')
         is_update = bool(old_ver)
 
+        # Скачивание по подписке: просим у auth-server короткую подписанную ссылку.
+        # Сервер не настроен/недоступен → откат на публичную ссылку из каталога.
+        try:
+            tok = self._auth.get("token", "")
+            if tok:
+                payload = json.dumps({"token": tok, "device_id": DEVICE_ID, "game_id": gid}).encode()
+                req0 = _ur.Request(f"{AUTH_SERVER}/auth/download", data=payload,
+                                   headers={"Content-Type": "application/json",
+                                            "User-Agent": "FlagRaceLauncher/1.0"})
+                gj = json.loads(_ur.urlopen(req0, timeout=15, context=SSL_CTX).read())
+                if gj.get("ok") and gj.get("url"):
+                    url = gj["url"]
+        except Exception:
+            pass
+
         # При обновлении нельзя трогать файлы, если игра запущена
         if is_update and self._game_process_running(game):
             self._status('close_before_update', name=game['name'])
