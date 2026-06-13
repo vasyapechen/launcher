@@ -1475,6 +1475,13 @@ class LauncherApp(ctk.CTk):
                     url = gj["url"]
         except Exception:
             pass
+        # отметка в лог: через гейт (signed) или откат на публичную ссылку — для проверки перед приватизацией
+        try:
+            _mode = "gated(signed)" if "release-assets.githubusercontent.com" in url else "public-fallback"
+            (DATA_DIR / "download_log.txt").open("a", encoding="utf-8").write(
+                f"{time.strftime('%Y-%m-%d %H:%M:%S')} {gid} -> {_mode}\n")
+        except Exception:
+            pass
 
         # При обновлении нельзя трогать файлы, если игра запущена
         if is_update and self._game_process_running(game):
