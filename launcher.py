@@ -41,6 +41,7 @@ except Exception:
 LAUNCHER_VERSION = "1.1.5"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
+INSTALLER_URL= "https://github.com/vasyapechen/launcher/releases/latest/download/VasyaLauncher-Setup.exe"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
 PATREON_URL  = "https://www.patreon.com/cw/vasya_pechen/membership"
 
@@ -53,6 +54,7 @@ ICON_FILE   = Path(sys._MEIPASS) / "icon.ico" if getattr(sys, 'frozen', False) e
 DATA_DIR = Path(os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or str(BASE_DIR)) / "VasyaLauncher"
 try: DATA_DIR.mkdir(parents=True, exist_ok=True)
 except Exception: DATA_DIR = BASE_DIR
+UPDATE_FLAG = DATA_DIR / "update_attempt.txt"   # целевая версия попытки апдейта (для проверки, применился ли он)
 
 STATE_FILE  = DATA_DIR / "games_state.json"
 CACHE_FILE  = DATA_DIR / "catalog_cache.json"
@@ -765,6 +767,7 @@ class LauncherApp(ctk.CTk):
 
     def _startup(self):
         self.after(0, self._show_loading)   # бегущая полоса, пока ищем игры
+        self._check_update_result()     # применилось ли прошлое обновление?
         self._check_launcher_update()   # проверяем обновление лаунчера всегда при запуске
         self._status('checking_auth')
         token = self._auth.get("token")
@@ -888,7 +891,44 @@ class LauncherApp(ctk.CTk):
         except Exception:
             return None
 
+    def _check_update_result(self):
+        """Если в прошлый раз пытались обновиться, но версия не поднялась —
+        новые файлы не записались (антивирус/защита папок/OneDrive). Показываем переустановку."""
+        self._update_failed = False
+        try:
+            if not UPDATE_FLAG.exists(): return
+            target = UPDATE_FLAG.read_text(encoding="utf-8").strip()
+            UPDATE_FLAG.unlink()
+            if target and _ver_tuple(target) > _ver_tuple(LAUNCHER_VERSION):
+                self._update_failed = True
+                self.after(500, self._show_reinstall_dialog)
+        except Exception:
+            pass
+
+    def _show_reinstall_dialog(self):
+        ru = _lang != 'en'
+        win = ctk.CTkToplevel(self)
+        win.title("Обновление" if ru else "Update")
+        win.geometry("460x300"); win.resizable(False, False)
+        win.configure(fg_color=COLORS["bg"])
+        win.protocol("WM_DELETE_WINDOW", win.destroy)
+        self._bring_to_front(win)
+        ctk.CTkLabel(win, text=("⚠ Обновление не применилось" if ru else "⚠ Update didn't apply"),
+                     font=ctk.CTkFont(size=18, weight="bold"), text_color=COLORS["accent"]).pack(pady=(24, 8))
+        msg = ("Новые файлы не удалось записать — обычно мешают антивирус,\n«Контролируемый доступ к папкам» Windows или OneDrive.\n\nПереустанови лаунчер установщиком — игры и вход сохранятся."
+               if ru else
+               "The new files couldn't be written — usually blocked by antivirus,\nWindows Controlled Folder Access or OneDrive.\n\nReinstall via the installer — your games and login are kept.")
+        ctk.CTkLabel(win, text=msg, font=ctk.CTkFont(size=12), text_color=COLORS["gray"], justify="center").pack(pady=(0, 6), padx=20)
+        btns = ctk.CTkFrame(win, fg_color="transparent"); btns.pack(pady=(14, 0))
+        ctk.CTkButton(btns, text=("Закрыть" if ru else "Close"), width=110, height=38,
+                      fg_color="#33334d", hover_color="#44445d", command=win.destroy).grid(row=0, column=0, padx=6)
+        ctk.CTkButton(btns, text=("⬇ Скачать установщик" if ru else "⬇ Download installer"), width=210, height=38,
+                      fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
+                      font=ctk.CTkFont(weight="bold"),
+                      command=lambda: (webbrowser.open(INSTALLER_URL), win.destroy())).grid(row=0, column=1, padx=6)
+
     def _check_launcher_update(self):
+        if getattr(self, '_update_failed', False): return   # уже показали окно переустановки
         data = fetch_json(VERSION_URL)
         if not data: return
         if _ver_tuple(data.get('version', '0')) > _ver_tuple(LAUNCHER_VERSION):
@@ -1013,6 +1053,9 @@ class LauncherApp(ctk.CTk):
 
             # bat (вне рабочей папки, чтобы можно было её удалить):
             # ждёт закрытия лаунчера → копирует новые файлы поверх папки → перезапуск
+            # помечаем целевую версию: при следующем старте сверим — реально ли поднялась
+            try: UPDATE_FLAG.write_text(str(data.get('version','')).strip(), encoding="utf-8")
+            except Exception: pass
             bat = DATA_DIR / "_update.bat"
             bat_text = (
                 "@echo off\r\n"
