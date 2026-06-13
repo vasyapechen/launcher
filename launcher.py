@@ -489,6 +489,7 @@ class GameCard(ctk.CTkFrame):
             self._chip(f_tr, "PRO", BADGE_PRO, "#ffffff").pack(anchor="e", pady=(3, 0))
 
     def show_progress(self, value, text=""):
+        self._stop_spin()                       # прогресс пошёл — гасим спиннер ожидания
         self._prog_frame.pack(pady=(8, 0), padx=16, fill="x")
         self.progress.pack(fill="x")
         self.prog_lbl.configure(text=text)
@@ -497,31 +498,42 @@ class GameCard(ctk.CTkFrame):
         self.btn.configure(state="disabled", text=tr('card_downloading'))
 
     def done_progress(self):
+        self._stop_spin()
         self._prog_frame.pack_forget()
         self.btn.configure(state="normal")
 
-    # ── Анимация «Запуск…» на кнопке Играть ──
+    # ── Спиннер на кнопке (ожидание: запуск игры / подключение к серверу) ──
     _SPIN_FRAMES = ["◐", "◓", "◑", "◒"]
-    def show_launching(self, duration=9000):
+    def _start_spin(self, label):
         self._spin_i = 0
+        self._spin_text = label
         try: self.btn.configure(state="disabled")
         except Exception: pass
         self._spin_anim()
-        try: self.after(duration, self.stop_launching)
-        except Exception: pass
     def _spin_anim(self):
         try:
             f = self._SPIN_FRAMES[self._spin_i % len(self._SPIN_FRAMES)]
             self._spin_i += 1
-            self.btn.configure(text=f"{f}  {tr('launching')}")
+            self.btn.configure(text=f"{f}  {self._spin_text}")
             self._spin_job = self.after(120, self._spin_anim)
         except Exception:
             pass
-    def stop_launching(self):
+    def _stop_spin(self):
         try: self.after_cancel(self._spin_job)
         except Exception: pass
+        self._spin_job = None
+    # анимация ожидания запуска игры
+    def show_launching(self, duration=9000):
+        self._start_spin(tr('launching'))
+        try: self.after(duration, self.stop_launching)
+        except Exception: pass
+    def stop_launching(self):
+        self._stop_spin()
         try: self.btn.configure(state="normal", text=tr('card_play'))
         except Exception: pass
+    # анимация сразу по клику «Скачать» — пока идёт запрос ссылки/подключение к серверу
+    def show_connecting(self):
+        self._start_spin(tr('card_downloading'))
 
 
 def _brighten(hex_col):
@@ -1397,6 +1409,10 @@ class LauncherApp(ctk.CTk):
             if card: card.show_launching()
             threading.Thread(target=self._launch, args=(game,), daemon=True).start()
         else:
+            # мгновенный фидбэк: спиннер + блокировка кнопки ДО сетевого запроса
+            # (иначе кнопка «висит» активной пока сервер просыпается → двойные клики)
+            card = self._cards.get(game['id'])
+            if card: card.show_connecting()
             threading.Thread(target=self._download,
                              args=(game,), daemon=True).start()
 
