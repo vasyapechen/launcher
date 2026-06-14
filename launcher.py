@@ -1057,6 +1057,7 @@ class LauncherApp(ctk.CTk):
             try: UPDATE_FLAG.write_text(str(data.get('version','')).strip(), encoding="utf-8")
             except Exception: pass
             bat = DATA_DIR / "_update.bat"
+            setup_tmp = DATA_DIR / "VasyaLauncher-Setup.exe"
             bat_text = (
                 "@echo off\r\n"
                 ":waitproc\r\n"
@@ -1068,7 +1069,20 @@ class LauncherApp(ctk.CTk):
                 "ping -n 2 127.0.0.1 >nul\r\n"
                 # /E все подпапки, /IS /IT перезаписать существующие, повторы при блокировке
                 f'robocopy "{new_root}" "{install_dir}" /E /IS /IT /R:10 /W:2 >nul\r\n'
+                # robocopy: код >=8 = реальная ошибка копирования (антивирус / «Контролируемый
+                # доступ к папкам» / заблокированный файл). Тогда вместо запуска старой версии
+                # тихо ставим свежим установщиком — он надёжно перезаписывает файлы.
+                "if errorlevel 8 goto fallback\r\n"
                 f'start "" "{install_dir}\\{exe_name}"\r\n'
+                "goto cleanup\r\n"
+                ":fallback\r\n"
+                f'curl -L -s -o "{setup_tmp}" "{INSTALLER_URL}"\r\n'
+                f'if exist "{setup_tmp}" (\r\n'
+                f'  start "" /wait "{setup_tmp}" /VERYSILENT /NORESTART\r\n'
+                f'  del "{setup_tmp}" >nul 2>&1\r\n'
+                ")\r\n"
+                f'start "" "{install_dir}\\{exe_name}"\r\n'
+                ":cleanup\r\n"
                 f'rmdir /s /q "{work}" >nul 2>&1\r\n'
                 'del "%~f0"\r\n'
             )
