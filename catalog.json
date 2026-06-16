@@ -3,10 +3,10 @@
     {
       "id": "flagrace",
       "name": "Flag Race",
-      "version": "1.28",
+      "version": "1.29",
       "description": "Гонка флагов стран мира",
       "size_mb": 29,
-      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.28/FlagRace.zip",
+      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.29/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": [
         "basic",
@@ -15,8 +15,12 @@
       "released": "2025-01-01",
       "early_access_days": 14,
       "is_new": true,
-      "changelog": "🖥 Дополнительная защита от белого экрана: если арена зависла (картинка есть, а кадров нет) — игра сама перезагружает её, прогресс раунда подтягивается с сервера\n🇬🇧 На экране победителя название страны теперь на выбранном языке — при English пишется английское название, а не русское",
+      "changelog": "🐞 Исправлен старт раунда: вебхуки, отправленные между раундами (в статусе queued), теперь корректно применяются при начале следующего раунда (раньше из-за ошибки старт раунда мог не срабатывать)",
       "changelogs": {
+        "1.29": {
+          "ru": "🐞 Исправлен старт раунда: вебхуки, отправленные между раундами (в статусе queued), теперь корректно применяются при начале следующего раунда (раньше из-за ошибки старт раунда мог не срабатывать)",
+          "en": "🐞 Fixed round start: webhooks sent between rounds (queued) are now correctly applied when the next round begins (previously a bug could prevent the round from starting)"
+        },
         "1.28": {
           "ru": "🖥 Дополнительная защита от белого экрана: если арена зависла (картинка есть, а кадров нет) — игра сама перезагружает её, прогресс раунда подтягивается с сервера\n🇬🇧 На экране победителя название страны теперь на выбранном языке — при English пишется английское название, а не русское",
           "en": "🖥 Extra protection against the white screen: if the arena freezes (image but no frames) — the game reloads it automatically, the round state is restored from the server\n🇬🇧 The winner screen now shows the country name in the selected language — English instead of Russian when EN is set"
@@ -75,7 +79,7 @@
         "ru": "🏁 НАСТРОЙКА ПОДАРКОВ — FLAG RACE\n\nПодключение идёт через TikFinity или Stream2Earn. На каждый подарок вешается веб-запрос (вебхук) на адрес игры.\n\n━━━━━━━━━━━━━━━\n1. ВЕБХУК\n━━━━━━━━━━━━━━━\nhttp://127.0.0.1:3000/webhook?country=kz&value=100&speed=yes&fire=yes\n\n• country — код страны (напр. kz)\n• value — сколько HP добавить\n• speed — ускорение на 5 сек (yes / no)\n• fire — залп из 3 ракет, каждая наносит 10% от value (yes / no)\n\nspeed и fire обычно ставят yes на дорогих подарках и no — на дешёвых (за 1 монетку).\n\n━━━━━━━━━━━━━━━\n2. ПРИМЕРЫ\n━━━━━━━━━━━━━━━\n🌹 Дешёвый (Роза, 1 монета) → 1 HP:\nhttp://127.0.0.1:3000/webhook?country=kz&value=1&speed=no&fire=no\n\n💐 Средний (~20 монет) → 20 HP:\nhttp://127.0.0.1:3000/webhook?country=kz&value=20&speed=no&fire=no\n\n🚀 Дорогой (~1000 монет) → 1000 HP + бонусы:\nhttp://127.0.0.1:3000/webhook?country=kz&value=1000&speed=yes&fire=yes\n\nДля другой страны меняй country (ru, us, de...).\n\n━━━━━━━━━━━━━━━\n3. STREAM2EARN\n━━━━━━━━━━━━━━━\nВсё через HTTP-запросы (вебхуки). Вставь адрес. По умолчанию тип POST — обязательно поменяй на GET.\n\n━━━━━━━━━━━━━━━\n4. TIKFINITY\n━━━━━━━━━━━━━━━\nОбычные вебхуки — вставь тот же адрес.\n\n━━━━━━━━━━━━━━━\n5. СКОЛЬКО HP\n━━━━━━━━━━━━━━━\n1 монета = 1 HP, 100 монет = 100 HP. Тонкая настройка — ползунки УРОН и СКОРОСТРЕЛЬНОСТЬ в самой игре.\n\n━━━━━━━━━━━━━━━\n6. КАРТИНКИ ПОДАРКОВ\n━━━━━━━━━━━━━━━\nПоложи картинки в папку panels рядом с игрой — они появятся в игре и настраиваются прямо там (длительность показа, мигание и т.д.).\n\n━━━━━━━━━━━━━━━\n7. СВОЙ ЗВУК ПОБЕДЫ\n━━━━━━━━━━━━━━━\nРядом с игрой есть папка winsounds — положи туда свои аудиофайлы (mp3 или wav).\n\nДальше в настройках игры:\n• «🔊 Звук победы по умолчанию» (ниже блока «Картинки стран») — выбери файл, который будет играть при любой победе.\n• Чтобы у конкретной страны был свой звук — выбери эту страну в «Картинки стран» и укажи файл в «🔊 Звук победы страны».\n\nЕсли у страны звук не задан — играет звук по умолчанию. Кнопкой ▶ можно прослушать.",
         "en": "🏁 GIFT SETUP — FLAG RACE\n\nSetup works through TikFinity or Stream2Earn. Each gift triggers a web request (webhook) to the game's address.\n\n━━━━━━━━━━━━━━━\n1. WEBHOOK\n━━━━━━━━━━━━━━━\nhttp://127.0.0.1:3000/webhook?country=kz&value=100&speed=yes&fire=yes\n\n• country — country code (e.g. kz)\n• value — how much HP to add\n• speed — speed boost for 5 sec (yes / no)\n• fire — a salvo of 3 rockets, each dealing 10% of value (yes / no)\n\nspeed and fire are usually yes for expensive gifts and no for cheap ones (1-coin).\n\n━━━━━━━━━━━━━━━\n2. EXAMPLES\n━━━━━━━━━━━━━━━\n🌹 Cheap (Rose, 1 coin) → 1 HP:\nhttp://127.0.0.1:3000/webhook?country=kz&value=1&speed=no&fire=no\n\n💐 Medium (~20 coins) → 20 HP:\nhttp://127.0.0.1:3000/webhook?country=kz&value=20&speed=no&fire=no\n\n🚀 Expensive (~1000 coins) → 1000 HP + boosts:\nhttp://127.0.0.1:3000/webhook?country=kz&value=1000&speed=yes&fire=yes\n\nFor another country, change country (ru, us, de...).\n\n━━━━━━━━━━━━━━━\n3. STREAM2EARN\n━━━━━━━━━━━━━━━\nEverything via HTTP requests (webhooks). Paste the address. The default type is POST — you MUST change it to GET.\n\n━━━━━━━━━━━━━━━\n4. TIKFINITY\n━━━━━━━━━━━━━━━\nRegular webhooks — paste the same address.\n\n━━━━━━━━━━━━━━━\n5. HOW MUCH HP\n━━━━━━━━━━━━━━━\n1 coin = 1 HP, 100 coins = 100 HP. Fine-tune with the DAMAGE and FIRE RATE sliders in the game.\n\n━━━━━━━━━━━━━━━\n6. GIFT IMAGES\n━━━━━━━━━━━━━━━\nPut images into the panels folder next to the game — they'll appear in the game and can be configured there (display time, blinking, etc.).\n\n━━━━━━━━━━━━━━━\n7. CUSTOM VICTORY SOUND\n━━━━━━━━━━━━━━━\nNext to the game there is a winsounds folder — drop your audio files there (mp3 or wav).\n\nThen in the game settings:\n• \"🔊 Default victory sound\" (below the Country Images block) — pick the file that plays on any win.\n• To give a specific country its own sound — select that country in Country Images and set the file under \"🔊 Country victory sound\".\n\nIf a country has no sound set, the default one plays. Use ▶ to preview."
       },
-      "sha256": "34def1d8566c2d157e92193d8ab01ca9b04d2c2ce3d8d99c1a3a9f97cffc0a07"
+      "sha256": "0b138f5219a02af1dce148472e79dd98db714cc0e0e5fc325415c3ff41402127"
     },
     {
       "id": "flagwar",
