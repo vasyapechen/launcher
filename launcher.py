@@ -42,6 +42,7 @@ LAUNCHER_VERSION = "1.1.6"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 INSTALLER_URL= "https://github.com/vasyapechen/launcher/releases/latest/download/VasyaLauncher-Setup.exe"
+PECHENFLOW_URL= "https://github.com/vasyapechen/PechenFlow-releases/releases/latest/download/PechenFlow-Setup.exe"
 AUTH_SERVER  = "https://auth-server-w8ra.onrender.com"
 PATREON_URL  = "https://www.patreon.com/cw/vasya_pechen/membership"
 
@@ -769,6 +770,9 @@ class LauncherApp(ctk.CTk):
         self.after(0, self._show_loading)   # бегущая полоса, пока ищем игры
         self._check_update_result()     # применилось ли прошлое обновление?
         self._check_launcher_update()   # проверяем обновление лаунчера всегда при запуске
+        # Промо PechenFlow при КАЖДОМ запуске (если не показываем окно «обновление не применилось»)
+        if not getattr(self, '_update_failed', False):
+            self.after(1300, self._show_pechenflow_promo)
         self._status('checking_auth')
         token = self._auth.get("token")
 
@@ -904,6 +908,36 @@ class LauncherApp(ctk.CTk):
                 self.after(500, self._show_reinstall_dialog)
         except Exception:
             pass
+
+    def _show_pechenflow_promo(self):
+        # Промо PechenFlow — показывается при каждом запуске; «Позже»/Esc просто закрывает.
+        ru = _lang != 'en'
+        try:
+            win = ctk.CTkToplevel(self)
+        except Exception:
+            return
+        win.title("PechenFlow")
+        win.geometry("470x300"); win.resizable(False, False)
+        win.configure(fg_color=COLORS["bg"])
+        win.protocol("WM_DELETE_WINDOW", win.destroy)
+        win.bind("<Escape>", lambda e: win.destroy())
+        self._bring_to_front(win)
+        title = "🍪 PechenFlow — добавь вкуса своему стриму!" if ru else "🍪 PechenFlow — spice up your stream!"
+        msg = ("Звуки, видео и вебхуки на подарки в TikLive.\nЗрители в восторге, эфир живой."
+               if ru else
+               "Sounds, videos and webhooks for gifts in TikLive.\nViewers love it, your stream feels alive.")
+        ctk.CTkLabel(win, text=title, font=ctk.CTkFont(size=18, weight="bold"),
+                     text_color=COLORS["accent"], wraplength=430, justify="center").pack(pady=(26, 10))
+        ctk.CTkLabel(win, text=msg, font=ctk.CTkFont(size=13), text_color=COLORS["gray"],
+                     justify="center", wraplength=430).pack(pady=(0, 8), padx=20)
+        btns = ctk.CTkFrame(win, fg_color="transparent"); btns.pack(pady=(16, 0))
+        ctk.CTkButton(btns, text=("Позже" if ru else "Later"), width=120, height=40,
+                      fg_color="#33334d", hover_color="#44445d", corner_radius=10,
+                      command=win.destroy).grid(row=0, column=0, padx=7)
+        ctk.CTkButton(btns, text=("⬇ Скачать" if ru else "⬇ Download"), width=200, height=40,
+                      fg_color=COLORS["btn_play"], hover_color=_brighten(COLORS["btn_play"]),
+                      corner_radius=10, font=ctk.CTkFont(weight="bold"),
+                      command=lambda: (webbrowser.open(PECHENFLOW_URL), win.destroy())).grid(row=0, column=1, padx=7)
 
     def _show_reinstall_dialog(self):
         ru = _lang != 'en'
