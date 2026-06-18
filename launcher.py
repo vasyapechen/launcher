@@ -38,7 +38,7 @@ except Exception:
     pass
 
 # ── Версия и URLs ────────────────────────────────────────
-LAUNCHER_VERSION = "1.1.6"
+LAUNCHER_VERSION = "1.1.7"
 CATALOG_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/catalog.json"
 VERSION_URL  = "https://raw.githubusercontent.com/vasyapechen/launcher/main/launcher_version.json"
 INSTALLER_URL= "https://github.com/vasyapechen/launcher/releases/latest/download/VasyaLauncher-Setup.exe"
