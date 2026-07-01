@@ -3,11 +3,11 @@
     {
       "id": "flagrace",
       "name": "Flag Race",
-      "version": "1.36",
+      "version": "1.37",
       "description": "Гонка флагов стран мира",
       "description_en": "World flags race",
-      "size_mb": 29,
-      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.36/FlagRace.zip",
+      "size_mb": 28,
+      "download_url": "https://github.com/vasyapechen/flagrace-dist/releases/download/v1.37/FlagRace.zip",
       "thumbnail": "",
       "tiers_required": [
         "basic",
@@ -16,8 +16,12 @@
       "released": "2025-01-01",
       "early_access_days": 14,
       "is_new": true,
-      "changelog": "🎚 Ползунки и их подписи крупнее. Кнопки управления (настройки/сброс/подарки) — в один горизонтальный ряд, вровень с блоками.",
+      "changelog": "🎞 Живой фон: весь задний план плавно едет, оживляя арену — скорость в настройках («🎞 Движение фона», 0 = выкл).\n✨ Трасса ожила: края дорожки мягко «дышат» светом, разметка по центру плавно движётся.",
       "changelogs": {
+        "1.37": {
+          "ru": "🎞 Живой фон: весь задний план плавно едет — тонкое движение оживляет арену. Скорость регулируется ползунком «🎞 Движение фона» в настройках (0 = выключить).\n✨ Трасса ожила: края дорожки мягко «дышат» светом, а разметка по центру плавно движётся.",
+          "en": "🎞 Living background: the whole backdrop drifts smoothly, adding subtle life to the arena. Speed is adjustable via the '🎞 Background motion' slider in settings (0 = off).\n✨ Track came alive: road edges softly 'breathe' with light and the center dashes glide along."
+        },
         "1.35": {
           "ru": "🖥 Исправлено: после авто-перезагрузки от «белого экрана» игра возвращается прямо в идущий раунд, а не зависает в меню настроек. Раунд на сервере не прерывается — гонка, HP и таблица лидеров сохраняются",
           "en": "🖥 Fixed: after the auto-reload from a 'white screen', the game returns straight to the running round instead of getting stuck on the settings menu. The round on the server isn't interrupted — race, HP and leaderboard are preserved"
