@@ -170,7 +170,11 @@
           "en": "🎚 «Damage/sec» slider snaps to stops (0,1–10,15…100). «+HP per click» reaches 1000 (min 1). Bigger sliders and labels. Control buttons in a horizontal row."
         }
       },
-      "sha256": "abe9f800b7c732b1e8a3ad915f31d965db6a41361cbd6b40f08274365c020c7f"
+      "sha256": "abe9f800b7c732b1e8a3ad915f31d965db6a41361cbd6b40f08274365c020c7f",
+      "media": {
+        "video": "https://raw.githubusercontent.com/vasyapechen/launcher/main/media/flagwar/preview.mp4",
+        "poster": "https://raw.githubusercontent.com/vasyapechen/launcher/main/media/flagwar/poster.jpg"
+      }
     },
     {
       "id": "flagrun",
