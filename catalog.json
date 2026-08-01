@@ -219,7 +219,11 @@
           "en": "🎁 The gifts folder is now created automatically next to the game (no manual step); your existing files are kept on update. Fixed: WebP images saved with a .png extension no longer appear transparent — format is detected by file content."
         }
       },
-      "sha256": "2142698fbc51f96550838abf2eb326eb10940ca13b5a594c9ee338722213686f"
+      "sha256": "2142698fbc51f96550838abf2eb326eb10940ca13b5a594c9ee338722213686f",
+      "media": {
+        "video": "https://raw.githubusercontent.com/vasyapechen/launcher/main/media/flagrun/preview.mp4",
+        "poster": "https://raw.githubusercontent.com/vasyapechen/launcher/main/media/flagrun/poster.jpg"
+      }
     },
     {
       "id": "arkanoidflag",
